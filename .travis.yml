@@ -10,5 +10,5 @@ before_install:
 script:
 - yarn run lint
 - CI=true yarn test --maxWorkers=2
-- yarn run build --maxWorkers=2
+- MAX_WORKERS=1 yarn run build
 
