@@ -11,7 +11,8 @@ if [ -z "${DOCKER_TAG}" ]; then
     exit 1
 fi
 
-DOCKER_IMAGE=quay.io/coreos/tectonic-console-builder:${DOCKER_TAG}
+#DOCKER_IMAGE=quay.io/coreos/tectonic-console-builder:${DOCKER_TAG}
+DOCKER_IMAGE=mareklibra/tectonic-console-builder:${DOCKER_TAG}
 
 docker build --rm=true -t "${DOCKER_IMAGE}" - < Dockerfile-builder
 docker push "${DOCKER_IMAGE}"
