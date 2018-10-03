@@ -16,8 +16,8 @@ import {
   SectionHeading
 } from './utils';
 
-const { common } = Cog.factory;
-const menuActions = [...common];
+
+const menuActions = [Cog.factory.ModifyLabels, Cog.factory.ModifyAnnotations, Cog.factory.Edit, Cog.factory.Delete];
 
 const Header = props => <ListHeader>
   <ColHead {...props} className="col-xs-6 col-sm-4" sortField="metadata.name">Name</ColHead>
@@ -71,13 +71,13 @@ export const DefaultDetailsPage = props => {
 };
 
 export const DefaultOverviewPage = connectToModel( ({kindObj: kindObject, resource}) =>
-  <div className="overview__sidebar-pane resource-overview">
+  <div className="co-m-pane resource-overview">
     <ResourceOverviewHeading
       actions={menuActions}
       kindObj={kindObject}
       resource={resource}
     />
-    <div className="overview__sidebar-pane-body resource-overview__body">
+    <div className="co-m-pane__body resource-overview__body">
       <div className="resource-overview__summary">
         <ResourceSummary resource={resource} />
       </div>

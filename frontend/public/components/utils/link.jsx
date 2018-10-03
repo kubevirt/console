@@ -1,7 +1,3 @@
-import * as React from 'react';
-
-import { ALL_NAMESPACES_KEY } from '../../const';
-
 // Kubernetes "dns-friendly" names match
 // [a-z0-9]([-a-z0-9]*[a-z0-9])?  and are 63 or fewer characters
 // long. This pattern checks the pattern but not the length.
@@ -12,6 +8,7 @@ import { ALL_NAMESPACES_KEY } from '../../const';
 //    new RegExp("PREFIX" + legalNamePattern.source + "(SUFFIX)")
 //
 // And it's ok for users to make assumptions about capturing groups.
+import { ALL_NAMESPACES_KEY } from '../../const';
 
 export const legalNamePattern = /[a-z0-9](?:[-a-z0-9]*[a-z0-9])?/;
 
@@ -46,5 +43,3 @@ export const getNamespace = path => {
   const match = ns.match(legalNamePattern);
   return match && match.length > 0 && match[0];
 };
-
-export const ExternalLink = ({href, text}) => <a className="co-external-link" href={href} target="_blank" rel="noopener noreferrer">{text}</a>;

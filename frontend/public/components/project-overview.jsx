@@ -10,15 +10,17 @@ import { ResourceLink, resourcePath } from './utils';
 
 export const ComponentLabel = ({text}) => <div className="co-component-label">{text}</div>;
 
-const ProjectOverviewListItem = ({item, onClick, selectedItem}) => {
-  const {controller, readiness, obj} = item;
-  const {namespace, name, uid} = obj.metadata;
-  const isSelected = uid === _.get(selectedItem, 'obj.metadata.uid', '');
+const ProjectOverviewListItem = ({obj, onClick, selectedItem}) => {
+  const {controller, kind, metadata} = obj;
+  const {namespace, name, uid} = metadata;
+  const isSelected = obj.metadata.uid === _.get(selectedItem, 'metadata.uid', '');
   const className = classnames('project-overview__item', {'project-overview__item--selected': isSelected});
+  const readyPods = obj.status.replicas || obj.status.currentNumberScheduled || 0;
+  const desiredPods = obj.spec.replicas || obj.status.desiredNumberScheduled || 0;
   const heading = <h3 className="project-overview__item-heading">
     <ResourceLink
       className="co-resource-link-truncate"
-      kind={obj.kind}
+      kind={kind}
       name={name}
       namespace={namespace}
     />
@@ -27,28 +29,25 @@ const ProjectOverviewListItem = ({item, onClick, selectedItem}) => {
   const additionalInfo = <div key={uid} className="project-overview__additional-info">
     { controller &&
       <div className="project-overview__detail project-overview__detail--controller">
-        <ComponentLabel text={_.startCase(controller.obj.kind)} />
+        <ComponentLabel text={_.startCase(controller.kind)} />
         <ResourceLink
           className="co-resource-link-truncate"
-          kind={controller.obj.kind}
-          name={_.get(controller, 'obj.metadata.name')}
+          kind={controller.kind}
+          name={controller.metadata.name}
           namespace={namespace}
         />
       </div>
     }
-    {
-      readiness &&
-      <div className="project-overview__detail project-overview__detail--status">
-        <ComponentLabel text="Status" />
-        <Link to={`${resourcePath(obj.kind, name, namespace)}/pods`}>
-          {readiness.ready} of {readiness.desired} pods
-        </Link>
-      </div>
-    }
+    <div className="project-overview__detail project-overview__detail--status">
+      <ComponentLabel text="Status" />
+      <Link to={`${resourcePath(kind, name, namespace)}/pods`}>
+        {readyPods} of {desiredPods} pods
+      </Link>
+    </div>
   </div>;
 
   return <ListView.Item
-    onClick={() => isSelected ? onClick({}) : onClick(item)}
+    onClick={() => isSelected ? onClick({}) : onClick(obj)}
     className={className}
     heading={heading}
     additionalInfo={[additionalInfo]}
@@ -58,18 +57,18 @@ const ProjectOverviewListItem = ({item, onClick, selectedItem}) => {
 ProjectOverviewListItem.displayName = 'ProjectOverviewListItem';
 
 ProjectOverviewListItem.propTypes = {
-  item: PropTypes.shape({
-    controller: PropTypes.object,
-    obj: PropTypes.object.isRequired,
-    readiness: PropTypes.object,
+  obj: PropTypes.shape({
+    currentController: PropTypes.object,
+    kind: PropTypes.string.isRequired,
+    metadata: PropTypes.object.isRequired
   }).isRequired
 };
 
 const ProjectOverviewList = ({items, onClickItem, selectedItem}) => {
   const listItems = _.map(items, (item) =>
     <ProjectOverviewListItem
-      key={item.obj.metadata.uid}
-      item={item}
+      key={item.metadata.uid}
+      obj={item}
       onClick={onClickItem}
       selectedItem={selectedItem}
     />

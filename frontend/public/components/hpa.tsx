@@ -11,7 +11,10 @@ import { ResourceEventStream } from './events';
 const HorizontalPodAutoscalersReference: K8sResourceKindReference = 'HorizontalPodAutoscaler';
 
 const { common } = Cog.factory;
-const menuActions = [...common];
+
+const menuActions = [
+  ...common,
+];
 
 const MetricsRow: React.SFC<MetricsRowProps> = ({type, current, target}) => <div className="row">
   <div className="col-xs-6">

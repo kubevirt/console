@@ -6,8 +6,7 @@ import { ColHead, List, ListHeader, ListPage } from './factory';
 import { Cog, ResourceCog, ResourceIcon } from './utils';
 import { referenceForCRD } from '../module/k8s';
 
-const { common } = Cog.factory;
-const menuActions = [...common];
+const menuActions = [Cog.factory.ModifyLabels, Cog.factory.ModifyAnnotations, Cog.factory.Edit, Cog.factory.Delete];
 
 const CRDHeader = props => <ListHeader>
   <ColHead {...props} className="col-lg-4 col-md-4 col-sm-4 col-xs-6" sortField="spec.names.kind">Name</ColHead>

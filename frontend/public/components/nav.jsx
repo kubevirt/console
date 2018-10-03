@@ -263,7 +263,7 @@ const searchStartsWith = ['search'];
 const rolesStartsWith = ['roles', 'clusterroles'];
 const rolebindingsStartsWith = ['rolebindings', 'clusterrolebindings'];
 const quotaStartsWith = ['resourcequotas', 'clusterresourcequotas'];
-const imagestreamsStartsWith = ['imagestreams', 'imagestreamtags', 'source-to-image'];
+const imagestreamsStartsWith = ['imagestreams', 'imagestreamtags'];
 const clusterSettingsStartsWith = ['settings/cluster', 'settings/ldap'];
 
 const ClusterPickerNavSection = connectToFlags(FLAGS.OPENSHIFT)(({flags}) => {
@@ -285,7 +285,7 @@ const MonitoringNavSection_ = ({urls, closeMenu}) => {
   const grafanaURL = urls[MonitoringRoutes.Grafana];
   return prometheusURL || alertManagerURL || grafanaURL
     ? <NavSection text="Monitoring" icon="pficon pficon-screen">
-      {prometheusURL && <HrefLink href="/monitoring" name="Alerts" onClick={closeMenu} />}
+      {prometheusURL && <HrefLink href="/monitoring/alerts" name="Alerts" onClick={closeMenu} />}
       {prometheusURL && <HrefLink href={prometheusURL} target="_blank" name="Metrics" onClick={closeMenu} isExternal={true} />}
       {alertManagerURL && <HrefLink href={alertManagerURL} target="_blank" name="Alertmanager" onClick={closeMenu} isExternal={true} />}
       {grafanaURL && <HrefLink href={grafanaURL} target="_blank" name="Dashboards" onClick={closeMenu} isExternal={true} />}
@@ -378,7 +378,6 @@ export class Nav extends React.Component {
         <ClusterPickerNavSection />
         <div ref={this.scroller} onWheel={this.preventScroll} className="navigation-container">
           <NavSection text="Home" icon="pficon pficon-home">
-            <HrefLink href="/overview" name="Overview" activePath="/overview/" onClick={this.close} />
             <HrefLink href="/status" name="Status" activePath="/status/" onClick={this.close} />
             <HrefLink href="/catalog" name="Catalog" activePath="/catalog/" onClick={this.close} />
             <HrefLink href="/search" name="Search" onClick={this.close} startsWith={searchStartsWith} />

@@ -71,7 +71,7 @@ export const types = {
   stopImpersonate: 'stopImpersonate',
   sortList: 'sortList',
   setCreateProjectMessage: 'setCreateProjectMessage',
-  setMonitoringData: 'setMonitoringData',
+  setMonitoringRules: 'setMonitoringRules',
 };
 
 export const UIActions = {
@@ -156,9 +156,9 @@ export const UIActions = {
 
   [types.setCreateProjectMessage]: message => ({type: types.setCreateProjectMessage, message}),
 
-  monitoringLoading: key => ({type: types.setMonitoringData, key, data: {loaded: false, loadError: null, data: null}}),
+  monitoringRulesLoading: () => ({type: types.setMonitoringRules, data: {loaded: false, loadError: null, rules: null}}),
 
-  monitoringLoaded: (key, data) => ({type: types.setMonitoringData, key, data: {loaded: true, loadError: null, data}}),
+  monitoringRulesLoaded: rules => ({type: types.setMonitoringRules, data: {loaded: true, loadError: null, rules}}),
 
-  monitoringErrored: (key, loadError) => ({type: types.setMonitoringData, key, data: {loaded: true, loadError, data: null}}),
+  monitoringRulesErrored: loadError => ({type: types.setMonitoringRules, data: {loaded: true, loadError, rules: null}}),
 };

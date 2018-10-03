@@ -1,11 +1,9 @@
 import * as React from 'react';
-import { connect } from 'react-redux';
 
 import { k8sCreate, referenceFor } from '../../module/k8s';
 import { NamespaceModel, ProjectRequestModel, NetworkPolicyModel } from '../../models';
 import { createModalLauncher, ModalTitle, ModalBody, ModalSubmitFooter } from '../factory/modal';
 import { history, PromiseComponent, resourceObjPath, SelectorInput } from '../utils';
-import { FLAGS, setFlag } from '../../features';
 
 const allow = 'allow';
 const deny = 'deny';
@@ -18,11 +16,7 @@ const defaultDeny = {
   }
 };
 
-const mapDispatchToProps = dispatch => ({
-  setProjectsAvailable: () => setFlag(dispatch, FLAGS.PROJECTS_AVAILABLE, true)
-});
-
-const CreateNamespaceModal = connect(null, mapDispatchToProps)(class CreateNamespaceModal extends PromiseComponent {
+class CreateNamespaceModal extends PromiseComponent {
   constructor(props) {
     super(props);
     this.state.np = allow;
@@ -48,7 +42,6 @@ const CreateNamespaceModal = connect(null, mapDispatchToProps)(class CreateNames
   }
 
   createProject() {
-    const {setProjectsAvailable} = this.props;
     const {name, displayName, description} = this.state;
     const project = {
       metadata: {
@@ -57,11 +50,7 @@ const CreateNamespaceModal = connect(null, mapDispatchToProps)(class CreateNames
       displayName,
       description,
     };
-    return k8sCreate(ProjectRequestModel, project).then(obj => {
-      // Immediately update the projects available flag to avoid the empty state message from displaying when projects watch is slow.
-      setProjectsAvailable();
-      return obj;
-    });
+    return k8sCreate(ProjectRequestModel, project);
   }
 
   _submit(event) {
@@ -127,7 +116,7 @@ const CreateNamespaceModal = connect(null, mapDispatchToProps)(class CreateNames
       <ModalSubmitFooter errorMessage={this.state.errorMessage} inProgress={this.state.inProgress} submitText={`Create ${label}`} cancel={this.props.cancel.bind(this)} />
     </form>;
   }
-});
+}
 
 export const createNamespaceModal = createModalLauncher(CreateNamespaceModal);
 export const createProjectModal = createModalLauncher(props => <CreateNamespaceModal {...props} createProject={true} />);

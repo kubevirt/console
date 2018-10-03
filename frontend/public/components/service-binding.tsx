@@ -12,7 +12,10 @@ import { ServiceCatalogParameters, ServiceCatalogParametersSecrets } from './ser
 const ServiceBindingsReference: K8sResourceKindReference = 'ServiceBinding';
 
 const { common } = Cog.factory;
-const menuActions = [...common];
+
+const menuActions = [
+  ...common,
+];
 
 const secretLink = (obj) => serviceCatalogStatus(obj) === 'Ready'
   ? <ResourceLink kind="Secret" name={obj.spec.secretName} title={obj.spec.secretName} namespace={obj.metadata.namespace} />

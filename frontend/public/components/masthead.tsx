@@ -6,7 +6,6 @@ import * as okdLogoImg from '../imgs/okd-logo.svg';
 import * as okdvirtLogoImg from '../imgs/okdvirt-logo.svg';
 import * as ocpLogoImg from '../imgs/openshift-platform-logo.svg';
 import * as onlineLogoImg from '../imgs/openshift-online-logo.svg';
-import * as dedicatedLogoImg from '../imgs/openshift-dedicated-logo.svg';
 import { FLAGS, connectToFlags, flagPending } from '../features';
 import { authSvc } from '../module/auth';
 import { Dropdown, ActionsMenu } from './utils';
@@ -118,10 +117,6 @@ export const LogoImage = () => {
     case 'okdvirt':
       logoImg = okdvirtLogoImg;
       logoAlt = 'OKD Virtualization';
-      break;
-    case 'dedicated':
-      logoImg = dedicatedLogoImg;
-      logoAlt = 'OpenShift Dedicated';
       break;
     default:
       logoImg = okdLogoImg;

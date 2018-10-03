@@ -5,8 +5,7 @@ import { ColHead, DetailsPage, List, ListHeader, ListPage } from './factory';
 import { Cog, ContainerTable, navFactory, ResourceCog, SectionHeading, ResourceLink, ResourceSummary, Timestamp } from './utils';
 import { ResourceEventStream } from './events';
 
-const { common } = Cog.factory;
-const menuActions = [...common];
+const menuActions = [Cog.factory.Edit, Cog.factory.Delete];
 
 const Header = props => <ListHeader>
   <ColHead {...props} className="col-lg-3 col-md-3 col-sm-4 col-xs-6" sortField="metadata.name">Name</ColHead>

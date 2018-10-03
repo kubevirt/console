@@ -6,22 +6,38 @@ import { connect } from 'react-redux';
 import { Link } from 'react-router-dom';
 
 import { coFetchJSON } from '../co-fetch';
-import { AlertResource, AlertRuleResource, alertRuleState, SilenceResource } from '../module/monitoring';
+import { alertRuleState } from '../module/monitoring';
 import k8sActions from '../module/k8s/k8s-actions';
 import { MonitoringRoutes, connectToURLs } from '../monitoring';
 import store from '../redux';
 import { UIActions } from '../ui/ui-actions';
-import { monitoringRulesToProps } from '../ui/ui-reducers';
 import { ColHead, List, ListHeader, ResourceRow, TextFilter } from './factory';
 import { CheckBoxes } from './row-filter';
 import { SafetyFirst } from './safety-first';
-import { Silence } from './silence';
-import { BreadCrumbs, ExternalLink, history, NavTitle, SectionHeading, StatusBox, Timestamp, withFallback } from './utils';
+import { BreadCrumbs, history, NavTitle, SectionHeading, StatusBox, Timestamp, withFallback } from './utils';
 import { formatDuration } from './utils/datetime';
+
+const AlertResource = {
+  kind: 'Alert',
+  label: 'Alert',
+  path: '/monitoring/alerts',
+  abbr: 'AL',
+};
+
+const AlertRuleResource = {
+  kind: 'AlertRule',
+  label: 'Alert Rule',
+  path: '/monitoring/alerts/rules',
+  abbr: 'AR',
+};
+
+const reduxID = 'monitoringRules';
 
 const detailsURL = (resource, name, labels) => `${resource.path}/${name}?${_.map(labels, (v, k) => `${encodeURIComponent(k)}=${encodeURIComponent(v)}`).join('&')}`;
 
-export const MonitoringResourceIcon = props => {
+const ExternalLink = ({href, text}) => <a className="co-external-link" href={href} target="_blank" rel="noopener noreferrer">{text}</a>;
+
+const ResourceIcon = props => {
   const {className, resource} = props;
   return <span className={classNames(`co-m-resource-icon co-m-resource-${resource.kind.toLowerCase()}`, className)} title={resource.label}>{resource.abbr}</span>;
 };
@@ -52,60 +68,34 @@ const getURLSearchParams = () => {
   return labels;
 };
 
-class MonitoringPageWrapper extends SafetyFirst<AlertsPageWrapperProps, null> {
+class AlertsPageWrapper extends SafetyFirst<AlertsPageWrapperProps, null> {
   componentDidMount () {
     super.componentDidMount();
 
-    const poll = (url: string, key: string, dataHandler: (data: any[]) => any[]): void => {
-      store.dispatch(UIActions.monitoringLoading(key));
-      const poller = (): void => {
-        coFetchJSON(url)
-          .then(({data}) => dataHandler(data))
-          .then(data => store.dispatch(UIActions.monitoringLoaded(key, data)))
-          .catch(e => store.dispatch(UIActions.monitoringErrored(key, e)))
-          .then(() => setTimeout(() => {
-            if (this.isMounted_) {
-              poller();
-            }
-          }, 15 * 1000));
-      };
-      poller();
-    };
-
-    const {alertManagerBaseURL, prometheusBaseURL} = (window as any).SERVER_FLAGS;
-
+    const {prometheusBaseURL} = (window as any).SERVER_FLAGS;
     if (!prometheusBaseURL) {
-      store.dispatch(UIActions.monitoringErrored('rules', new Error('prometheusBaseURL not set')));
+      store.dispatch(UIActions.monitoringRulesErrored(new Error('prometheusBaseURL not set')));
       return;
     }
 
-    poll(`${prometheusBaseURL}/api/v1/rules`, 'rules', data => {
-      // Flatten the rules data to make it easier to work with and also discard non-alerting rules since those are
-      // the only ones we will be using
-      const allRules = _.flatMap(_.get(data, 'groups'), 'rules');
-      return _.filter(allRules, {type: 'alerting'});
-    });
-
-    if (!alertManagerBaseURL) {
-      const e = new Error('alertManagerBaseURL not set');
-      store.dispatch(UIActions.monitoringErrored('alerts', e));
-      store.dispatch(UIActions.monitoringErrored('silences', e));
-      return;
-    }
-
-    poll(`${alertManagerBaseURL}/api/v1/alerts`, 'alerts', data => data);
-
-    poll(`${alertManagerBaseURL}/api/v1/silences`, 'silences', data => {
-      // Set a name field on the Silence to make things easier
-      _.each(data, s => {
-        s.name = _.get(_.find(s.matchers, {name: 'alertname'}), 'value');
-        if (!s.name) {
-          // No alertname, so fall back to displaying the other matchers
-          s.name = s.matchers.map(m => `${m.name}=${m.value}`).join(', ');
-        }
-      });
-      return data;
-    });
+    store.dispatch(UIActions.monitoringRulesLoading());
+    const poller = () => {
+      coFetchJSON(`${prometheusBaseURL}/api/v1/rules`)
+        .then(response => {
+          // Flatten the rules data to make it easier to work with and also discard non-alerting rules since those are
+          // the only ones we will be using
+          const allRules = _.flatMap(response.data.groups, 'rules');
+          const alertingRules = _.filter(allRules, {type: 'alerting'});
+          store.dispatch(UIActions.monitoringRulesLoaded(alertingRules));
+        })
+        .catch(e => store.dispatch(UIActions.monitoringRulesErrored(e)))
+        .then(() => setTimeout(() => {
+          if (this.isMounted_) {
+            poller();
+          }
+        }, 15 * 1000));
+    };
+    poller();
   }
 
   render () {
@@ -113,10 +103,10 @@ class MonitoringPageWrapper extends SafetyFirst<AlertsPageWrapperProps, null> {
     return <Page {...pageProps} />;
   }
 }
-export const connectMonitoringPage = Page => withFallback(props => <MonitoringPageWrapper {...props} Page={Page} />);
+const connectPage = Page => withFallback(props => <AlertsPageWrapper {...props} Page={Page} />);
 
-const alertStateToProps = (state, {match}): AlertsDetailsPageProps => {
-  const {data: rules, loaded, loadError}: Rules = monitoringRulesToProps(state);
+const alertStateToProps = ({UI}, {match}): AlertsDetailsPageProps => {
+  const {loaded, loadError, rules}: ReduxData = UI.get(reduxID) || {};
   const name = _.get(match, 'params.name');
   const labels = getURLSearchParams();
 
@@ -141,7 +131,7 @@ const AlertsDetailsPage_ = connect(alertStateToProps)((props: AlertsDetailsPageP
     </Helmet>
     <div className="co-m-nav-title co-m-nav-title--detail">
       <h1 className="co-m-pane__heading">
-        <div className="co-m-pane__name"><MonitoringResourceIcon className="co-m-resource-icon--lg pull-left" resource={AlertResource} />{name}</div>
+        <div className="co-m-pane__name"><ResourceIcon className="co-m-resource-icon--lg pull-left" resource={AlertResource} />{name}</div>
       </h1>
     </div>
     <StatusBox data={rule} loaded={loaded} loadError={loadError}>
@@ -165,7 +155,7 @@ const AlertsDetailsPage_ = connect(alertStateToProps)((props: AlertsDetailsPageP
                 <dt>Alert Rule</dt>
                 <dd>
                   <div className="co-resource-link">
-                    <MonitoringResourceIcon resource={AlertRuleResource} />
+                    <ResourceIcon resource={AlertRuleResource} />
                     <Link to={detailsURL(AlertRuleResource, name, _.get(rule, 'labels'))} className="co-resource-link__resource-name">{name}</Link>
                   </div>
                 </dd>
@@ -188,7 +178,7 @@ const AlertsDetailsPage_ = connect(alertStateToProps)((props: AlertsDetailsPageP
     </StatusBox>
   </React.Fragment>;
 });
-export const AlertsDetailsPage = connectMonitoringPage(AlertsDetailsPage_);
+export const AlertsDetailsPage = connectPage(AlertsDetailsPage_);
 
 const ViewInPrometheusLink_ = ({rule, urls}) => {
   const baseUrl = urls[MonitoringRoutes.Prometheus];
@@ -224,8 +214,8 @@ const ActiveAlerts = ({alerts}) => <div className="co-m-table-grid co-m-table-gr
   </div>
 </div>;
 
-const ruleStateToProps = (state, {match}): AlertRulesDetailsPageProps => {
-  const {data: rules, loaded, loadError}: Rules = monitoringRulesToProps(state);
+const ruleStateToProps = ({UI}, {match}): AlertRulesDetailsPageProps => {
+  const {loaded, loadError, rules}: ReduxData = UI.get(reduxID) || {};
   const name = _.get(match, 'params.name');
   const rule = _.find(rules, {name, labels: getURLSearchParams()});
   return {loaded, loadError, name, rule};
@@ -250,7 +240,7 @@ const AlertRulesDetailsPage_ = connect(ruleStateToProps)((props: AlertRulesDetai
     <div className="co-m-nav-title co-m-nav-title--detail co-m-nav-title--breadcrumbs">
       <BreadCrumbs breadcrumbs={breadcrumbs} />
       <h1 className="co-m-pane__heading">
-        <div className="co-m-pane__name"><MonitoringResourceIcon className="co-m-resource-icon--lg pull-left" resource={AlertRuleResource} />{name}</div>
+        <div className="co-m-pane__name"><ResourceIcon className="co-m-resource-icon--lg pull-left" resource={AlertRuleResource} />{name}</div>
       </h1>
     </div>
     <StatusBox data={rule} loaded={loaded} loadError={loadError}>
@@ -304,9 +294,9 @@ const AlertRulesDetailsPage_ = connect(ruleStateToProps)((props: AlertRulesDetai
     </StatusBox>
   </React.Fragment>;
 });
-export const AlertRulesDetailsPage = connectMonitoringPage(AlertRulesDetailsPage_);
+export const AlertRulesDetailsPage = connectPage(AlertRulesDetailsPage_);
 
-const AlertRow = ({obj}) => {
+const Row = ({obj}) => {
   const {alerts, annotations, labels, name} = obj;
   const activeAt = _.min(_.map(alerts, 'activeAt'));
 
@@ -314,7 +304,7 @@ const AlertRow = ({obj}) => {
     <div className="col-xs-7">
       <div className="co-resource-link-wrapper">
         <span className="co-resource-link">
-          <MonitoringResourceIcon resource={AlertResource} />
+          <ResourceIcon resource={AlertResource} />
           <Link to={detailsURL(AlertResource, name, labels)} className="co-resource-link__resource-name">{name}</Link>
         </span>
       </div>
@@ -334,10 +324,12 @@ const AlertHeader = props => <ListHeader>
   <ColHead {...props} className="col-xs-2" sortField="labels.severity">Severity</ColHead>
 </ListHeader>;
 
-const AlertsPageDescription_ = ({urls}) => <p className="co-help-text">OpenShift ships with a pre-configured and self-updating monitoring stack powered by <ExternalLink href={urls[MonitoringRoutes.Prometheus]} text="Prometheus" /></p>;
+const AlertsPageDescription_ = ({urls}) => <div className="co-m-pane__filter-bar-group co-m-pane__filter-bar-group--help-text">
+  <p className="co-help-text">OpenShift ships with a pre-configured and self-updating monitoring stack powered by <ExternalLink href={urls[MonitoringRoutes.Prometheus]} text="Prometheus" /></p>
+</div>;
 const AlertsPageDescription = connectToURLs(MonitoringRoutes.Prometheus)(AlertsPageDescription_);
 
-const alertsRowFilter = {
+const rowFilter = {
   type: 'alert-rule-state',
   selected: ['firing', 'pending'],
   reducer: alertRuleState,
@@ -348,15 +340,18 @@ const alertsRowFilter = {
   ],
 };
 
+const nameFilterID = 'alert-rule-name';
+
 // Row filter settings are stored in "k8s"
-export const filtersToProps = ({k8s}, {reduxID}) => {
+const listStateToProps = ({k8s, UI}): AlertsPageProps => {
+  const {loaded, loadError, rules}: ReduxData = UI.get(reduxID) || {};
   const filtersMap = k8s.getIn([reduxID, 'filters']);
-  return {filters: filtersMap ? filtersMap.toJS() : null};
+  return {filters: filtersMap ? filtersMap.toJS() : null, loaded, loadError, rules};
 };
 
-export const MonitoringListPage = connect(filtersToProps)(class InnerMonitoringListPage extends React.Component<ListPageProps> {
+const AlertsPage_ = connect(listStateToProps)(class InnerAlertsPage_ extends React.Component<AlertsPageProps> {
   /* eslint-disable no-undef */
-  props: ListPageProps;
+  props: AlertsPageProps;
   defaultNameFilter: string;
   /* eslint-enable no-undef */
 
@@ -367,7 +362,6 @@ export const MonitoringListPage = connect(filtersToProps)(class InnerMonitoringL
 
   applyTextFilter (e) {
     const v = e.target.value;
-    const {nameFilterID, reduxID} = this.props;
     store.dispatch(k8sActions.filterList(reduxID, nameFilterID, v));
 
     const params = new URLSearchParams(window.location.search);
@@ -381,7 +375,6 @@ export const MonitoringListPage = connect(filtersToProps)(class InnerMonitoringL
   }
 
   componentWillMount () {
-    const {nameFilterID, reduxID} = this.props;
     const params = new URLSearchParams(window.location.search);
 
     // Ensure the current name filter value matches the name filter GET param
@@ -395,35 +388,26 @@ export const MonitoringListPage = connect(filtersToProps)(class InnerMonitoringL
   }
 
   render () {
-    const {data, filters, Header, loaded, loadError, match, PageDescription, reduxID, Row, rowFilter, textFilterLabel} = this.props;
+    const {filters, loaded, loadError, rules} = this.props;
 
     return <React.Fragment>
       <Helmet>
         <title>Monitoring Alerts</title>
       </Helmet>
       <NavTitle title="Monitoring Alerts" />
-      <ul className="co-m-horizontal-nav__menu">
-        <li className={classNames('co-m-horizontal-nav__menu-item', {'co-m-horizontal-nav-item--active': match.path === AlertResource.path})}>
-          <Link to={AlertResource.path}>Alerts</Link>
-        </li>
-        <li className={classNames('co-m-horizontal-nav__menu-item', {'co-m-horizontal-nav-item--active': match.path === SilenceResource.path})}>
-          <Link to={SilenceResource.path}>Silences</Link>
-        </li>
-        <li className="co-m-horizontal-nav__menu-item co-m-horizontal-nav__menu-item--divider"></li>
-      </ul>
       <div className="co-m-pane__filter-bar co-m-pane__filter-bar--with-help-text">
-        {PageDescription && <div className="co-m-pane__filter-bar-group co-m-pane__filter-bar-group--help-text">
-          <PageDescription />
-        </div>}
+        <div className="co-m-pane__filter-bar-group">
+          <AlertsPageDescription />
+        </div>
         <div className="co-m-pane__filter-bar-group co-m-pane__filter-bar-group--filter">
-          <TextFilter defaultValue={this.defaultNameFilter} label={textFilterLabel} onChange={this.applyTextFilter} />
+          <TextFilter defaultValue={this.defaultNameFilter} label="Alerts by name" onChange={this.applyTextFilter} />
         </div>
       </div>
       <div className="co-m-pane__body">
         <div className="row">
           <CheckBoxes
             items={rowFilter.items}
-            numbers={_.countBy(data, rowFilter.reducer)}
+            numbers={_.countBy(rules, rowFilter.reducer)}
             reduxIDs={[reduxID]}
             selected={rowFilter.selected}
             type={rowFilter.type}
@@ -432,13 +416,13 @@ export const MonitoringListPage = connect(filtersToProps)(class InnerMonitoringL
         <div className="row">
           <div className="col-xs-12">
             <List
-              data={data}
-              filters={filters}
-              Header={Header}
-              loaded={loaded}
-              loadError={loadError}
-              reduxID={reduxID}
+              Header={AlertHeader}
               Row={Row}
+              data={rules}
+              filters={filters}
+              loadError={loadError}
+              loaded={loaded}
+              reduxID={reduxID}
             />
           </div>
         </div>
@@ -446,18 +430,7 @@ export const MonitoringListPage = connect(filtersToProps)(class InnerMonitoringL
     </React.Fragment>;
   }
 });
-
-const AlertsPage_ = props => <MonitoringListPage
-  {...props}
-  Header={AlertHeader}
-  nameFilterID="alert-rule-name"
-  PageDescription={AlertsPageDescription}
-  reduxID="monitoringRules"
-  Row={AlertRow}
-  rowFilter={alertsRowFilter}
-  textFilterLabel="Alerts by name"
-/>;
-export const AlertsPage = connectMonitoringPage(connect(monitoringRulesToProps)(AlertsPage_));
+export const AlertsPage = connectPage(AlertsPage_);
 
 /* eslint-disable no-undef, no-unused-vars */
 type Alert = {
@@ -465,19 +438,19 @@ type Alert = {
   annotations: any;
   labels: {[key: string]: string};
   state: string;
-  value: number,
+  value: any,
 };
 type Rule = {
-  alerts: Alert[];
+  alerts: Array<Alert>;
   annotations: any;
   duration: number;
   labels: {[key: string]: string};
   query: string;
 };
-type Rules = {
-  data: Rule[];
+type ReduxData = {
   loaded: boolean;
   loadError?: string;
+  rules: Array<Rule>;
 };
 type StateProps = {
   state: string;
@@ -498,17 +471,9 @@ export type AlertRulesDetailsPageProps = {
   name: string;
   rule: Rule;
 };
-export type ListPageProps = {
-  data: Rule[] | Silence[];
+export type AlertsPageProps = {
   filters: {[key: string]: any};
-  Header: React.ComponentType<any>;
   loaded: boolean;
   loadError?: string;
-  match: {path: string};
-  nameFilterID: string;
-  PageDescription: React.ComponentType<any>;
-  reduxID: string;
-  Row: React.ComponentType<any>;
-  rowFilter: {type: string, selected: string[], reducer: (any) => string, items: {id: string, title: string}[]};
-  textFilterLabel: string;
+  rules: Array<Rule>;
 };

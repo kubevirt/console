@@ -14,8 +14,7 @@
 .node-ready,
 .pvc-bound,
 .route-accepted,
-.status-ready,
-.silence-active {
+.status-ready {
   color: $color-pf-green-400;
 }
 
@@ -27,7 +26,6 @@
   color: $color-red-error;
 }
 
-.alert-pending,
-.silence-pending {
+.alert-pending {
   color: $color-orange-warning;
 }

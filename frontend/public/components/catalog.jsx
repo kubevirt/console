@@ -5,8 +5,8 @@ import { Helmet } from 'react-helmet';
 
 import { FLAGS, connectToFlags, flagPending } from '../features';
 import { Firehose, NavTitle, StatusBox } from './utils';
-import { CatalogTileViewPage } from './catalog-items';
-import { getMostRecentBuilderTag, getAnnotationTags, isBuilder} from './image-stream';
+import { CatalogList } from './catalog-items';
+import { getMostRecentBuilderTag, isBuilder} from './image-stream';
 import { serviceClassDisplayName } from '../module/k8s';
 import { getServiceClassIcon, getServiceClassImage, getImageStreamIcon, getImageForIconClass } from './catalog-item-icon';
 
@@ -30,19 +30,13 @@ class CatalogListPage extends React.Component {
 
   createCatalogData() {
     const {clusterserviceclasses, imagestreams, loaded} = this.props;
-    let clusterServiceClassItems = null, imageStreamsItems = null;
 
     if (!loaded) {
       return;
     }
 
-    if (clusterserviceclasses) {
-      clusterServiceClassItems = this.normalizeClusterServiceClasses(clusterserviceclasses.data, 'ClusterServiceClass');
-    }
-
-    if (imagestreams) {
-      imageStreamsItems = this.normalizeImagestreams(imagestreams.data, 'ImageStream');
-    }
+    const clusterServiceClassItems = this.normalizeClusterServiceClasses(clusterserviceclasses.data, 'ClusterServiceClass');
+    const imageStreamsItems = this.normalizeImagestreams(imagestreams.data, 'ImageStream');
 
     const items = _.sortBy([...clusterServiceClassItems, ...imageStreamsItems], 'tileName');
 
@@ -62,7 +56,6 @@ class CatalogListPage extends React.Component {
       const tileIconClass = tileImgUrl ? null : iconClass;
       const tileDescription = _.get(serviceClass, 'spec.description');
       const tileProvider = _.get(serviceClass, 'spec.externalMetadata.providerDisplayName');
-      const tags = _.get(serviceClass, 'spec.tags');
       const href = `/k8s/cluster/clusterserviceclasses/${serviceClass.metadata.name}/create-instance?preselected-ns=${namespace}`;
       return {
         obj: serviceClass,
@@ -73,7 +66,6 @@ class CatalogListPage extends React.Component {
         tileDescription,
         tileProvider,
         href,
-        tags,
       };
     });
   }
@@ -84,14 +76,13 @@ class CatalogListPage extends React.Component {
     });
 
     return _.map(builderImageStreams, imageStream => {
-      const { namespace: currentNamespace = '' } = this.props;
+      const { namespace: currentNamespace } = this.props;
       const tag = getMostRecentBuilderTag(imageStream);
       const tileName = _.get(imageStream, ['metadata', 'annotations', 'openshift.io/display-name']) || imageStream.metadata.name;
       const iconClass = getImageStreamIcon(tag);
       const tileImgUrl = getImageForIconClass(iconClass);
       const tileIconClass = tileImgUrl ? null : iconClass;
       const tileDescription = _.get(tag, 'annotations.description');
-      const tags = getAnnotationTags(tag);
       const tileProvider = _.get(tag, 'annotations.openshift.io/provider-display-name');
       const { name, namespace } = imageStream.metadata;
       const href = `/source-to-image?imagestream=${name}&imagestream-ns=${namespace}&preselected-ns=${currentNamespace}`;
@@ -104,7 +95,6 @@ class CatalogListPage extends React.Component {
         tileDescription,
         tileProvider,
         href,
-        tags,
       };
     });
   }
@@ -113,9 +103,13 @@ class CatalogListPage extends React.Component {
     const {loaded, loadError} = this.props;
     const {items} = this.state;
 
-    return <StatusBox data={items} loaded={loaded} loadError={loadError} label="Resources">
-      <CatalogTileViewPage items={items} />
-    </StatusBox>;
+    return <div className="co-m-pane">
+      <div className="co-m-pane__body">
+        <StatusBox data={items} loaded={loaded} loadError={loadError} label="Resources">
+          <CatalogList items={items} />
+        </StatusBox>
+      </div>
+    </div>;
   }
 }
 
@@ -151,9 +145,11 @@ export const Catalog = connectToFlags(FLAGS.OPENSHIFT, FLAGS.SERVICE_CATALOG)(({
       prop: 'imagestreams'
     });
   }
-  return <Firehose resources={resources}>
-    <CatalogListPage namespace={namespace} />
-  </Firehose>;
+  return <div className="catalog">
+    <Firehose resources={resources}>
+      <CatalogListPage namespace={namespace} />
+    </Firehose>
+  </div>;
 });
 
 Catalog.displayName = 'Catalog';
@@ -168,9 +164,7 @@ export const CatalogPage = ({match}) => {
     <Helmet>
       <title>Catalog</title>
     </Helmet>
-    <div className="co-catalog">
-      <NavTitle title="Catalog" />
-      <Catalog namespace={namespace} />
-    </div>
+    <NavTitle title="Catalog" />
+    <Catalog namespace={namespace} />
   </React.Fragment>;
 };

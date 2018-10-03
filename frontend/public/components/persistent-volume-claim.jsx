@@ -7,9 +7,7 @@ import { Cog, navFactory, ResourceCog, SectionHeading, ResourceLink, ResourceSum
 import { ResourceEventStream } from './events';
 
 const pvcPhase = pvc => pvc.status.phase;
-
-const { common } = Cog.factory;
-const menuActions = [...common];
+const menuActions = [Cog.factory.ModifyLabels, Cog.factory.ModifyAnnotations, Cog.factory.Edit, Cog.factory.Delete];
 
 const PVCStatus = ({pvc}) => {
   const phase = pvcPhase(pvc);
