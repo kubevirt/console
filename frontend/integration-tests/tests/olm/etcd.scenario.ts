@@ -99,7 +99,7 @@ describe('Interacting with the etcd OCS', () => {
     const newContent = defaultsDeep({}, {metadata: {name: `${testName}-etcdcluster`, labels: {[testLabel]: testName}}}, safeLoad(content));
     await yamlView.setContent(safeDump(newContent));
 
-    expect($('.yaml-editor-header').getText()).toEqual('Create Etcd Cluster');
+    expect($('.yaml-editor__header').getText()).toEqual('Create Etcd Cluster');
   });
 
   it('displays new `EtcdCluster` that was created from YAML editor', async() => {
@@ -120,11 +120,11 @@ describe('Interacting with the etcd OCS', () => {
 
   it('displays the raw YAML for the `EtcdCluster`', async() => {
     await element(by.linkText('YAML')).click();
-    await browser.wait(until.presenceOf($('.yaml-editor--buttons')));
-    await $('.yaml-editor--buttons').element(by.buttonText('Save')).click();
-    await browser.wait(until.visibilityOf($('.alert-success')), 2000);
+    await browser.wait(until.presenceOf($('.yaml-editor__buttons')));
+    await $('.yaml-editor__buttons').element(by.buttonText('Save')).click();
+    await browser.wait(until.visibilityOf(crudView.successMessage), 2000);
 
-    expect($('.alert-success').getText()).toContain(`${etcdcluster} has been updated to version`);
+    expect(crudView.successMessage.getText()).toContain(`${etcdcluster} has been updated to version`);
   });
 
   it('displays Kubernetes objects associated with the `EtcdCluster` in its "Resources" section', async() => {
@@ -148,7 +148,7 @@ describe('Interacting with the etcd OCS', () => {
     const newContent = defaultsDeep({}, {metadata: {name: `${testName}-etcdbackup`, labels: {[testLabel]: testName}}}, safeLoad(content));
     await yamlView.setContent(safeDump(newContent));
 
-    expect($('.yaml-editor-header').getText()).toEqual('Create Etcd Backup');
+    expect($('.yaml-editor__header').getText()).toEqual('Create Etcd Backup');
   });
 
   it('displays new `EtcdBackup` that was created from YAML editor', async() => {
@@ -169,11 +169,11 @@ describe('Interacting with the etcd OCS', () => {
 
   it('displays the raw YAML for the `EtcdBackup`', async() => {
     await element(by.linkText('YAML')).click();
-    await browser.wait(until.presenceOf($('.yaml-editor--buttons')));
-    await $('.yaml-editor--buttons').element(by.buttonText('Save')).click();
-    await browser.wait(until.visibilityOf($('.alert-success')), 2000);
+    await browser.wait(until.presenceOf($('.yaml-editor__buttons')));
+    await $('.yaml-editor__buttons').element(by.buttonText('Save')).click();
+    await browser.wait(until.visibilityOf(crudView.successMessage), 2000);
 
-    expect($('.alert-success').getText()).toContain(`${etcdbackup} has been updated to version`);
+    expect(crudView.successMessage.getText()).toContain(`${etcdbackup} has been updated to version`);
   });
 
   it('displays Kubernetes objects associated with the `EtcdBackup` in its "Resources" section', async() => {
@@ -197,7 +197,7 @@ describe('Interacting with the etcd OCS', () => {
     const newContent = defaultsDeep({}, {metadata: {name: `${testName}-etcdrestore`, labels: {[testLabel]: testName}}}, safeLoad(content));
     await yamlView.setContent(safeDump(newContent));
 
-    expect($('.yaml-editor-header').getText()).toEqual('Create Etcd Restore');
+    expect($('.yaml-editor__header').getText()).toEqual('Create Etcd Restore');
   });
 
   it('displays new `EtcdRestore` that was created from YAML editor', async() => {
@@ -218,11 +218,11 @@ describe('Interacting with the etcd OCS', () => {
 
   it('displays the raw YAML for the `EtcdRestore`', async() => {
     await element(by.linkText('YAML')).click();
-    await browser.wait(until.presenceOf($('.yaml-editor--buttons')));
-    await $('.yaml-editor--buttons').element(by.buttonText('Save')).click();
-    await browser.wait(until.visibilityOf($('.alert-success')), 2000);
+    await browser.wait(until.presenceOf($('.yaml-editor__buttons')));
+    await $('.yaml-editor__buttons').element(by.buttonText('Save')).click();
+    await browser.wait(until.visibilityOf(crudView.successMessage), 2000);
 
-    expect($('.alert-success').getText()).toContain(`${etcdrestore} has been updated to version`);
+    expect(crudView.successMessage.getText()).toContain(`${etcdrestore} has been updated to version`);
   });
 
   it('displays Kubernetes objects associated with the `EtcdRestore` in its "Resources" section', async() => {

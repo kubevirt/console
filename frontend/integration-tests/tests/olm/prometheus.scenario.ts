@@ -97,7 +97,7 @@ describe('Interacting with the Prometheus OCS', () => {
     await $$('.dropdown-menu').first().element(by.linkText('Prometheus')).click();
     await browser.wait(until.presenceOf($('.ace_text-input')));
 
-    expect($('.yaml-editor-header').getText()).toEqual('Create Prometheus');
+    expect($('.yaml-editor__header').getText()).toEqual('Create Prometheus');
   });
 
   it('displays new `Prometheus` that was created from YAML editor', async() => {
@@ -117,11 +117,11 @@ describe('Interacting with the Prometheus OCS', () => {
 
   it('displays the raw YAML for the `Prometheus`', async() => {
     await element(by.linkText('YAML')).click();
-    await browser.wait(until.presenceOf($('.yaml-editor--buttons')));
-    await $('.yaml-editor--buttons').element(by.buttonText('Save')).click();
+    await browser.wait(until.presenceOf($('.yaml-editor__buttons')));
+    await $('.yaml-editor__buttons').element(by.buttonText('Save')).click();
     await browser.wait(until.visibilityOf($('.alert-success')), 1000);
 
-    expect($('.alert-success').getText()).toContain('example has been updated to version');
+    expect(crudView.successMessage.getText()).toContain('example has been updated to version');
   });
 
   it('displays Kubernetes objects associated with the `Prometheus` in its "Resources" section', async() => {
@@ -141,7 +141,7 @@ describe('Interacting with the Prometheus OCS', () => {
     await $$('.dropdown-menu').first().element(by.linkText('Alertmanager')).click();
     await browser.wait(until.presenceOf($('.ace_text-input')));
 
-    expect($('.yaml-editor-header').getText()).toEqual('Create Alertmanager');
+    expect($('.yaml-editor__header').getText()).toEqual('Create Alertmanager');
   });
 
   it('displays new `Alertmanager` that was created from YAML editor', async() => {
@@ -162,11 +162,11 @@ describe('Interacting with the Prometheus OCS', () => {
 
   it('displays the raw YAML for the `Alertmanager`', async() => {
     await element(by.linkText('YAML')).click();
-    await browser.wait(until.presenceOf($('.yaml-editor--buttons')));
-    await $('.yaml-editor--buttons').element(by.buttonText('Save')).click();
-    await browser.wait(until.visibilityOf($('.alert-success')), 1000);
+    await browser.wait(until.presenceOf($('.yaml-editor__buttons')));
+    await $('.yaml-editor__buttons').element(by.buttonText('Save')).click();
+    await browser.wait(until.visibilityOf(crudView.successMessage), 1000);
 
-    expect($('.alert-success').getText()).toContain('alertmanager-main has been updated to version');
+    expect(crudView.successMessage.getText()).toContain('alertmanager-main has been updated to version');
   });
 
   it('displays Kubernetes objects associated with the `Alertmanager` in its "Resources" section', async() => {
@@ -186,7 +186,7 @@ describe('Interacting with the Prometheus OCS', () => {
     await $$('.dropdown-menu').first().element(by.linkText('Service Monitor')).click();
     await browser.wait(until.presenceOf($('.ace_text-input')), 10000);
 
-    expect($('.yaml-editor-header').getText()).toEqual('Create Service Monitor');
+    expect($('.yaml-editor__header').getText()).toEqual('Create Service Monitor');
   });
 
   it('displays new `ServiceMonitor` that was created from YAML editor', async() => {
@@ -206,11 +206,11 @@ describe('Interacting with the Prometheus OCS', () => {
 
   it('displays the raw YAML for the `ServiceMonitor`', async() => {
     await element(by.linkText('YAML')).click();
-    await browser.wait(until.presenceOf($('.yaml-editor--buttons')));
-    await $('.yaml-editor--buttons').element(by.buttonText('Save')).click();
-    await browser.wait(until.visibilityOf($('.alert-success')), 1000);
+    await browser.wait(until.presenceOf($('.yaml-editor__buttons')));
+    await $('.yaml-editor__buttons').element(by.buttonText('Save')).click();
+    await browser.wait(until.visibilityOf(crudView.successMessage), 1000);
 
-    expect($('.alert-success').getText()).toContain('example has been updated to version');
+    expect(crudView.successMessage.getText()).toContain('example has been updated to version');
   });
 
   it('displays Kubernetes objects associated with the `ServiceMonitor` in its "Resources" section', async() => {

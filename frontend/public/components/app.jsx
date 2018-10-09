@@ -18,7 +18,7 @@ import { Masthead } from './masthead';
 import { NamespaceSelector } from './namespace';
 import { Nav } from './nav';
 import { SearchPage } from './search';
-import { CreateSilence, SilencesPage, SilencesDetailsPage } from './silence';
+import { CreateSilence, EditSilence, SilencesPage, SilencesDetailsPage } from './silence';
 import { ResourceDetailsPage, ResourceListPage } from './resource-list';
 import { history, AsyncComponent, Loading } from './utils';
 import { namespacedPrefixes } from './utils/link';
@@ -183,6 +183,9 @@ class App extends React.PureComponent {
             <Route path="/search/ns/:ns" exact component={NamespaceFromURL(SearchPage)} />
             <Route path="/search" exact component={ActiveNamespaceRedirect} />
 
+            <LazyRoute path="/k8s/all-namespaces/import" exact loader={() => import('./import-yaml').then(m => NamespaceFromURL(m.ImportYamlPage))} />
+            <LazyRoute path="/k8s/ns/:ns/import/" exact loader={() => import('./import-yaml').then(m => NamespaceFromURL(m.ImportYamlPage))} />
+
             <Route path="/k8s/ns/:ns/customresourcedefinitions/:plural" exact component={ResourceListPage} />
             <Route path="/k8s/ns/:ns/customresourcedefinitions/:plural/:name" component={ResourceDetailsPage} />
             <Route path="/k8s/all-namespaces/customresourcedefinitions/:plural" exact component={ResourceListPage} />
@@ -220,6 +223,7 @@ class App extends React.PureComponent {
             <Route path="/monitoring/silences" exact component={SilencesPage} />
             <Route path="/monitoring/silences/new" exact component={CreateSilence} />
             <Route path="/monitoring/silences/:id" exact component={SilencesDetailsPage} />
+            <Route path="/monitoring/silences/:id/edit" exact component={EditSilence} />
 
             <Route path="/k8s/cluster/:plural" exact component={ResourceListPage} />
             <LazyRoute path="/k8s/cluster/:plural/new" exact loader={() => import('./create-yaml' /* webpackChunkName: "create-yaml" */).then(m => m.CreateYAML)} />
