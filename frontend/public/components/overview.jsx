@@ -7,10 +7,14 @@ import { Toolbar } from 'patternfly-react';
 import { Helmet } from 'react-helmet';
 import { Link } from 'react-router-dom';
 import { CSSTransition } from 'react-transition-group';
+
+import { SafetyFirst } from './safety-first';
 import { StartGuide } from './start-guide';
 import { TextFilter } from './factory';
 import { ProjectOverview } from './project-overview';
 import { ResourceOverviewPage } from './resource-list';
+import { prometheusBasePath } from './graphs';
+import { coFetchJSON } from '../co-fetch';
 import { ALL_NAMESPACES_KEY } from '../const';
 import {
   DaemonSetModel,
@@ -34,6 +38,7 @@ import {
 const EMPTY_GROUP_LABEL = 'other resources';
 const DEPLOYMENT_REVISION_ANNOTATION = 'deployment.kubernetes.io/revision';
 const DEPLOYMENT_CONFIG_LATEST_VERSION_ANNOTATION = 'openshift.io/deployment-config.latest-version';
+const METRICS_POLL_INTERVAL = 30 * 1000;
 
 const getDeploymentRevision = obj => {
   const revision = _.get(obj, ['metadata', 'annotations', DEPLOYMENT_REVISION_ANNOTATION]);
@@ -43,6 +48,76 @@ const getDeploymentRevision = obj => {
 const getDeploymentConfigVersion = obj => {
   const version = _.get(obj, ['metadata', 'annotations', DEPLOYMENT_CONFIG_LATEST_VERSION_ANNOTATION]);
   return version && parseInt(version, 10);
+};
+
+const getDeploymentPhase = rc => _.get(rc, ['metadata', 'annotations', 'openshift.io/deployment.phase']);
+
+// Only show an alert once if multiple pods have the same error for the same owner.
+const podAlertKey = (alert, pod, containerName = 'all') => {
+  const id = _.get(pod, 'metadata.ownerReferences[0].uid', pod.metadata.uid);
+  return `${alert}--${id}--${containerName}`;
+};
+
+const getPodAlerts = pod => {
+  const alerts = {};
+  const statuses = [
+    ..._.get(pod, 'status.initContainerStatuses', []),
+    ..._.get(pod, 'status.containerStatuses', []),
+  ];
+  statuses.forEach(status => {
+    const { name, state } = status;
+    const waitingReason = _.get(state, 'waiting.reason');
+    if (waitingReason === 'CrashLoopBackOff') {
+      const key = podAlertKey(waitingReason, pod, name);
+      alerts[key] = {
+        severity: 'error',
+        message: `Container ${name} is crash-looping.`,
+      };
+    }
+  });
+
+  _.get(pod, 'status.conditions', []).forEach(condition => {
+    const { type, status, reason, message } = condition;
+    if (type === 'PodScheduled' && status === 'False' && reason === 'Unschedulable') {
+      const key = podAlertKey(reason, pod, name);
+      alerts[key] = {
+        severity: 'error',
+        message: `${reason}: ${message}`,
+      };
+    }
+  });
+
+  return alerts;
+};
+
+const combinePodAlerts = pods => _.reduce(pods, (acc, pod) => ({
+  ...acc,
+  ...getPodAlerts(pod),
+}), {});
+
+const getReplicationControllerAlerts = rc => {
+  const phase = getDeploymentPhase(rc);
+  const version = getDeploymentConfigVersion(rc);
+  const label = _.isFinite(version) ? `#${version}` : rc.metadata.name;
+  const key = `${rc.metadata.uid}--Rollout${phase}`;
+  switch (phase) {
+    case 'Cancelled':
+      return {
+        [key]: {
+          severity: 'info',
+          message: `Rollout ${label} was cancelled.`,
+        },
+      };
+    case 'Failed':
+      return {
+        [key]: {
+          severity: 'error',
+          message: `Rollout ${label} failed.`,
+        },
+      };
+    default:
+      return {};
+  }
 };
 
 const getOwnedResources = ({metadata:{uid}}, resources) => {
@@ -106,7 +181,7 @@ const OverviewHeading = ({disabled, groupOptions, handleFilterChange, handleGrou
         {
           !_.isEmpty(groupOptions) &&
           <div className="form-group overview-toolbar__form-group">
-            <label className="overview-toolbar__label">
+            <label className="overview-toolbar__label co-no-bold">
               Group by label
             </label>
             <Dropdown
@@ -150,7 +225,7 @@ OverviewHeading.defaultProps = {
   selectedGroup: ''
 };
 
-class OverviewDetails extends React.Component {
+class OverviewDetails extends SafetyFirst {
   constructor(props) {
     super(props);
     this.handleFilterChange = this.handleFilterChange.bind(this);
@@ -165,6 +240,16 @@ class OverviewDetails extends React.Component {
       groupOptions: {},
       selectedGroupLabel: ''
     };
+  }
+
+  componentDidMount() {
+    super.componentDidMount();
+    this.fetchMetrics();
+  }
+
+  componentWillUnmount () {
+    super.componentWillUnmount();
+    clearInterval(this.metricsInterval);
   }
 
   componentDidUpdate(prevProps, prevState) {
@@ -192,6 +277,48 @@ class OverviewDetails extends React.Component {
         groupedItems: this.groupItems(this.state.filteredItems, selectedGroupLabel)
       });
     }
+  }
+
+  fetchMetrics() {
+    if (!prometheusBasePath) {
+      // Proxy has not been set up.
+      return;
+    }
+
+    const { namespace } = this.props;
+    const { metrics: previousMetrics } = this.state;
+    const queries = {
+      memory: `pod_name:container_memory_usage_bytes:sum{namespace="${namespace}"}`,
+      cpu: `pod_name:container_cpu_usage:sum{namespace="${namespace}"}`,
+    };
+
+    const promises = _.map(queries, (query, name) => {
+      const url = `${prometheusBasePath}/api/v1/query?query=${encodeURIComponent(query)}`;
+      return coFetchJSON(url).then(({ data: {result} }) => {
+        const byPod = result.reduce((acc, { metric, value }) => {
+          acc[metric.pod_name] = Number(value[1]);
+          return acc;
+        }, {});
+        return { [name]: byPod };
+      });
+    });
+
+    Promise.all(promises).then(data => {
+      const metrics = data.reduce((acc, metric) => _.assign(acc, metric), {});
+      this.setState({metrics});
+    }).catch(res => {
+      const status = _.get(res, 'response.status');
+      // eslint-disable-next-line no-console
+      console.error('Could not fetch metrics, status:', status);
+      // Don't retry on some status codes unless a previous request succeeded.
+      if (_.includes([401, 403, 502, 503], status) && _.isEmpty(previousMetrics)) {
+        throw new Error(`Could not fetch metrics, status: ${status}`);
+      }
+    }).then(() => this.metricsInterval = setTimeout(() => {
+      if (this.isMounted_) {
+        this.fetchMetrics();
+      }
+    }, METRICS_POLL_INTERVAL));
   }
 
   filterItems(items) {
@@ -247,20 +374,32 @@ class OverviewDetails extends React.Component {
   }
 
   addPodsToItem(item) {
-    const {pods} = this.props;
+    const {pods: allPods} = this.props;
+    const {obj} = item;
+    const pods = getOwnedResources(obj, allPods.data);
+    const alerts = {
+      ...item.alerts,
+      ...combinePodAlerts(pods),
+    };
     return {
       ...item,
-      pods: getOwnedResources(item.obj, pods.data)
+      pods,
+      alerts,
     };
   }
 
   toReplicationControllerItem(rc) {
+    const alerts = getReplicationControllerAlerts(rc);
+    const phase = getDeploymentPhase(rc);
+    const revision = getDeploymentConfigVersion(rc);
     return this.addPodsToItem({
       obj: {
         ...rc,
         kind: ReplicationControllerModel.kind
       },
-      revision: getDeploymentConfigVersion(rc),
+      alerts,
+      phase,
+      revision,
     });
   }
 
@@ -277,11 +416,13 @@ class OverviewDetails extends React.Component {
     const rcItems = sortReplicationControllersByRevision(replicationControllers).map(rc => this.toReplicationControllerItem(rc));
     const current = _.first(rcItems);
     const previous = _.nth(rcItems, 1);
+    const isRollingOut = current && previous && current.phase !== 'Cancelled' && current.phase !== 'Failed';
 
     return {
       ...item,
       current,
       previous,
+      isRollingOut,
     };
   }
 
@@ -308,10 +449,12 @@ class OverviewDetails extends React.Component {
     const rsItems = sortReplicaSetsByRevision(replicaSets).map(rs => this.toReplicaSetItem(rs));
     const current = _.first(rsItems);
     const previous = _.nth(rsItems, 1);
+    const isRollingOut = current && previous;
     return {
       ...item,
       current,
       previous,
+      isRollingOut,
     };
   }
 
@@ -425,7 +568,7 @@ class OverviewDetails extends React.Component {
 
   render() {
     const {loaded, loadError, selectedItem, title} = this.props;
-    const {filteredItems, groupedItems, groupOptions, selectedGroupLabel} = this.state;
+    const {filteredItems, groupedItems, groupOptions, metrics, selectedGroupLabel} = this.state;
     return <div className="co-m-pane">
       <OverviewHeading
         groupOptions={groupOptions}
@@ -444,6 +587,7 @@ class OverviewDetails extends React.Component {
           <ProjectOverview
             selectedItem={selectedItem}
             groups={groupedItems}
+            metrics={metrics}
             onClickItem={this.props.selectItem}
           />
         </StatusBox>

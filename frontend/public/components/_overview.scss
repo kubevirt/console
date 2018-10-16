@@ -57,13 +57,17 @@
       transform 125ms ease-out,
       opacity 175ms linear;
     z-index: 5;
+  }
 
-    .resource-overview {
-      height: 100%;
-      min-height: 0;
-      overflow-x: hidden;
-      overflow-y: auto;
-      -webkit-overflow-scrolling: touch;
+  @media(max-width: $screen-xs-max) {
+    .overview__sidebar-appear {
+      transform: translateX(7px);
+      opacity: .75;
+    }
+
+    .overview__sidebar-appear-active {
+      transform: translateX(0);
+      opacity: 1;
     }
   }
 
@@ -126,4 +130,30 @@
   .co-actions-menu {
     margin-top: -3px;
   }
+}
+
+.resource-overview {
+  height: 100%;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.resource-overview__body {
+  display: flex;
+  flex-wrap: wrap;
+}
+
+.resource-overview__details {
+  width: 50%;
+}
+
+.resource-overview__pod-counts {
+  width: 100%;
+}
+
+.resource-overview__summary {
+  padding-right: 10px;
+  width: 50%;
 }

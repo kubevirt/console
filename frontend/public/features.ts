@@ -4,7 +4,7 @@ import { connect } from 'react-redux';
 import { Map as ImmutableMap } from 'immutable';
 import * as _ from 'lodash-es';
 
-import { SelfSubjectAccessReviewModel, ChannelOperatorConfigModel, PrometheusModel, ClusterServiceVersionModel, ClusterModel, ChargebackReportModel, ClusterServiceClassModel, VirtualMachineModel } from './models';
+import { SelfSubjectAccessReviewModel, ChannelOperatorConfigModel, PrometheusModel, ClusterServiceVersionModel, ClusterModel, ChargebackReportModel, ClusterServiceClassModel, VirtualMachineModel, PackageManifestModel } from './models';
 import { k8sBasePath, referenceForModel } from './module/k8s/k8s';
 import { k8sCreate } from './module/k8s/resource';
 import { types } from './module/k8s/k8s-actions';
@@ -49,6 +49,7 @@ export enum FLAGS {
   KUBEVIRT = 'KUBEVIRT',
   PROJECTS_AVAILABLE = 'PROJECTS_AVAILABLE',
   SERVICE_CATALOG = 'SERVICE_CATALOG',
+  KUBERNETES_MARKETPLACE = 'KUBERNETES_MARKETPLACE',
 }
 
 export const DEFAULTS_ = _.mapValues(FLAGS, flag => flag === FLAGS.AUTH_ENABLED
@@ -64,6 +65,7 @@ export const CRDs = {
   [referenceForModel(VirtualMachineModel)]: FLAGS.KUBEVIRT,
   [referenceForModel(ClusterServiceClassModel)]: FLAGS.SERVICE_CATALOG,
   [referenceForModel(ClusterServiceVersionModel)]: FLAGS.OPERATOR_LIFECYCLE_MANAGER,
+  [referenceForModel(PackageManifestModel)]: FLAGS.KUBERNETES_MARKETPLACE,
 };
 
 const SET_FLAG = 'SET_FLAG';

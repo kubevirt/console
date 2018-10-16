@@ -15,7 +15,7 @@ import { analyticsSvc } from '../module/analytics';
 import { AlertsPage, AlertsDetailsPage, AlertRulesDetailsPage } from './alert';
 import { GlobalNotifications } from './global-notifications';
 import { Masthead } from './masthead';
-import { NamespaceSelector } from './namespace';
+import { NamespaceBar } from './namespace';
 import { Nav } from './nav';
 import { SearchPage } from './search';
 import { CreateSilence, EditSilence, SilencesPage, SilencesDetailsPage } from './silence';
@@ -144,7 +144,7 @@ class App extends React.PureComponent {
       <Masthead />
       <Nav />
       <div id="content">
-        <Route path={namespacedRoutes} component={NamespaceSelector} />
+        <Route path={namespacedRoutes} component={NamespaceBar} />
         <GlobalNotifications />
         <div id="content-scrollable">
           <Switch>
@@ -164,6 +164,8 @@ class App extends React.PureComponent {
 
             <LazyRoute path="/cluster-health" exact loader={() => import('./cluster-health' /* webpackChunkName: "cluster-health" */).then(m => m.ClusterHealth)} />
             <LazyRoute path="/start-guide" exact loader={() => import('./start-guide' /* webpackChunkName: "start-guide" */).then(m => m.StartGuidePage)} />
+
+            <LazyRoute path="/marketplace" exact loader={() => import('./marketplace/kubernetes-marketplace' /* webpackChunkName: "marketplace" */).then(m => m.MarketplacePage)} />
 
             <LazyRoute path={`/k8s/ns/:ns/${SubscriptionModel.plural}/new`} exact loader={() => import('./operator-lifecycle-manager').then(m => NamespaceFromURL(m.CreateSubscriptionYAML))} />
 
@@ -196,7 +198,6 @@ class App extends React.PureComponent {
               // <LazyRoute path="/k8s/cluster/clusterroles/:name/add-rule" exact loader={() => import('./RBAC' /* webpackChunkName: "rbac" */).then(m => m.EditRulePage)} />
               // <LazyRoute path="/k8s/cluster/clusterroles/:name/:rule/edit" exact loader={() => import('./RBAC' /* webpackChunkName: "rbac" */).then(m => m.EditRulePage)} />
             }
-            <Route path="/k8s/cluster/clusterroles/:name" component={props => <ResourceDetailsPage {...props} plural="clusterroles" />} />
 
             {
               // <LazyRoute path="/k8s/ns/:ns/roles/:name/add-rule" exact loader={() => import('./RBAC' /* webpackChunkName: "rbac" */).then(m => m.EditRulePage)} />
@@ -209,12 +210,15 @@ class App extends React.PureComponent {
             <LazyRoute path="/k8s/ns/:ns/secrets/:name/edit" exact kind="Secret" loader={() => import('./secrets/create-secret' /* webpackChunkName: "create-secret" */).then(m => m.EditSecret)} />
             <LazyRoute path="/k8s/ns/:ns/secrets/:name/edit-yaml" exact kind="Secret" loader={() => import('./create-yaml').then(m => m.EditYAMLPage)} />
 
+            <LazyRoute path="/k8s/ns/:ns/routes/new/form" exact kind="Route" loader={() => import('./routes/create-route' /* webpackChunkName: "create-route" */).then(m => m.CreateRoute)} />
+
             <LazyRoute path="/k8s/cluster/rolebindings/new" exact loader={() => import('./RBAC' /* webpackChunkName: "rbac" */).then(m => m.CreateRoleBinding)} kind="RoleBinding" />
             <LazyRoute path="/k8s/ns/:ns/rolebindings/new" exact loader={() => import('./RBAC' /* webpackChunkName: "rbac" */).then(m => m.CreateRoleBinding)} kind="RoleBinding" />
             <LazyRoute path="/k8s/ns/:ns/rolebindings/:name/copy" exact kind="RoleBinding" loader={() => import('./RBAC' /* webpackChunkName: "rbac" */).then(m => m.CopyRoleBinding)} />
             <LazyRoute path="/k8s/ns/:ns/rolebindings/:name/edit" exact kind="RoleBinding" loader={() => import('./RBAC' /* webpackChunkName: "rbac" */).then(m => m.EditRoleBinding)} />
             <LazyRoute path="/k8s/cluster/clusterrolebindings/:name/copy" exact kind="ClusterRoleBinding" loader={() => import('./RBAC' /* webpackChunkName: "rbac" */).then(m => m.CopyRoleBinding)} />
             <LazyRoute path="/k8s/cluster/clusterrolebindings/:name/edit" exact kind="ClusterRoleBinding" loader={() => import('./RBAC' /* webpackChunkName: "rbac" */).then(m => m.EditRoleBinding)} />
+            <LazyRoute path="/k8s/ns/:ns/:plural/:name/attach-storage" exact loader={() => import('./storage/attach-storage' /* webpackChunkName: "attach-storage" */).then(m => m.AttachStorage)} />
 
             <Redirect from="/monitoring" exact to="/monitoring/alerts" />
             <Route path="/monitoring/alerts" exact component={AlertsPage} />

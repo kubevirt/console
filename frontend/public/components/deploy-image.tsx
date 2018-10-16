@@ -14,7 +14,6 @@ import {
   history,
   Loading,
   PageHeading,
-  resourcePathFromModel,
   Timestamp,
   units
 } from './utils';
@@ -24,6 +23,16 @@ import {
   ImageStreamImportsModel,
   ServiceModel
 } from '../models';
+
+const getSuggestedName = name => {
+  if (!name) {
+    return;
+  }
+
+  const imageName: string = _.last(name.split('/'));
+
+  return _.first(imageName.split(/[^a-z0-9-]/));
+};
 
 const runsAsRoot = image => {
   const user = _.get(image, 'dockerImageMetadata.Config.User');
@@ -80,7 +89,7 @@ export class DeployImage extends React.Component<DeployImageProps, DeployImageSt
       kind: 'ImageStreamImport',
       apiVersion: 'image.openshift.io/v1',
       metadata: {
-        name: imageName,
+        name: 'newapp',
         namespace
       },
       spec: {
@@ -88,7 +97,7 @@ export class DeployImage extends React.Component<DeployImageProps, DeployImageSt
         images: [{
           from: {
             kind: 'DockerImage',
-            name: imageName
+            name: _.trim(imageName)
           }
         }]
       },
@@ -118,7 +127,7 @@ export class DeployImage extends React.Component<DeployImageProps, DeployImageSt
               tag,
               status
             },
-            name,
+            name: getSuggestedName(name),
           });
         } else {
           this.setState({
@@ -196,7 +205,7 @@ export class DeployImage extends React.Component<DeployImageProps, DeployImageSt
             ],
             from: {
               kind: 'ImageStreamTag',
-              name: `${isi.name}:${isi.tag}`,
+              name: `${name}:${isi.tag}`,
               namespace
             }
           }
@@ -261,9 +270,10 @@ export class DeployImage extends React.Component<DeployImageProps, DeployImageSt
       spec: {
         tags: [{
           name: isi.tag,
-          annotations: _.assign({
+          annotations: {
+            ...annotations,
             'openshift.io/imported-from': isi.name
-          }, annotations),
+          },
           from: {
             kind: 'DockerImage',
             name: isi.name
@@ -279,7 +289,7 @@ export class DeployImage extends React.Component<DeployImageProps, DeployImageSt
       .then(() => {
         this.setState({inProgress: false});
         if (!this.state.error) {
-          history.push(resourcePathFromModel(DeploymentConfigModel, deploymentConfig.metadata.name, deploymentConfig.metadata.namespace));
+          history.push(`/overview/ns/${this.state.namespace}`);
         }
       });
   };
@@ -343,7 +353,7 @@ export class DeployImage extends React.Component<DeployImageProps, DeployImageSt
                     <span className="pficon pficon-warning-triangle-o" aria-hidden="true"></span>
                     Image <strong>{isi.name}</strong> runs as the <strong>root</strong> user which might not be permitted by your cluster administrator.
                   </div>}
-                  <h2 className="co-image-name-results__heading">
+                  <h2 className="co-image-name-results__heading co-break-word">
                     {isi.name}
                     <small>
                       {_.get(isi, 'result.ref.registry') && <span>from {isi.result.ref.registry}, </span>}
