@@ -18,7 +18,7 @@ import { k8sCreate, actions } from '../module/okdk8s';
 
 import { startStopVmModal } from './modals/start-stop-vm-modal';
 import { restartVmModal } from './modals/restart-vm-modal';
-import { getResourceKind, getLabelMatcher, findVMI, findPod, getFlattenForKind } from './utils/resources';
+import { getResourceKind, getLabelMatcher, findVMI, findPod, getFlattenForKind, getVmStatus } from './utils/resources';
 
 import { CreateVmWizard, TEMPLATE_TYPE_LABEL } from 'kubevirt-web-ui-components';
 import VmConsolesConnected from './vmconsoles';
@@ -62,7 +62,7 @@ const StateColumn = props => {
   if (props.loaded){
     const vm = props.flatten(props.resources);
     if (vm){
-      return _.get(vm, 'spec.running', false) ? 'Running' : 'Stopped';
+      return getVmStatus(vm);
     }
   }
   return dashes;
@@ -305,6 +305,16 @@ const ConnectedNewVMWizard = ({ activeNamespace, resources, flatten, onHide, cre
     units={units} />;
 };
 
+const filters = [{
+  type: 'vm-status',
+  selected: [ 'Running', 'Stopped' ],
+  reducer: getVmStatus,
+  items: [
+    { id: 'Running', title: 'Running' },
+    { id: 'Stopped', title: 'Stopped' }
+  ]
+}];
+
 export const VirtualMachinesPage = connect(
   mapStateToProps, mapDispatchToProps)(class VirtualMachinesPage extends Component {
 
@@ -368,7 +378,8 @@ export const VirtualMachinesPage = connect(
         kind={VirtualMachineModel.kind}
         ListComponent={VMList}
         createProps={this.createProps}
-      />
+        rowFilters={filters}
+      />;
     </React.Fragment>;
   }
 });

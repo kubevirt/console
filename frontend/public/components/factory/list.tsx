@@ -27,6 +27,7 @@ import { routeStatus } from '../routes';
 import { secretTypeFilterReducer } from '../secret';
 import { bindingType, roleType } from '../RBAC';
 import { LabelList, ResourceCog, ResourceLink, resourcePath, Selector, StatusBox, containerLinuxUpdateOperator, EmptyBox } from '../utils';
+import { getVmStatus } from '../../kubevirt/components/utils/resources';
 
 const fuzzyCaseInsensitive = (a, b) => fuzzy(_.toLower(a), _.toLower(b));
 
@@ -143,6 +144,15 @@ const listFilters = {
     const displayName = serviceClassDisplayName(serviceClass);
     return fuzzyCaseInsensitive(str, displayName);
   },
+
+  'vm-status' : (statuses, vm) => {
+    if (!statuses || !statuses.selected || !statuses.selected.size) {
+      return true;
+    }
+
+    const status = getVmStatus(vm);
+    return statuses.selected.has(status) || !_.includes(statuses.all, status);
+  }
 
 };
 
