@@ -2,7 +2,7 @@ import * as _ from 'lodash-es';
 import React, { Component, Fragment } from 'react';
 import { connect } from 'react-redux';
 
-import { ResourceEventStream } from './okdcomponents';
+import { ResourceEventStream, errorModal } from './okdcomponents';
 import { ListHeader, ColHead, List, ListPage, ResourceRow, DetailsPage } from './factory/okdfactory';
 import { breadcrumbsForOwnerRefs, Firehose, ResourceLink, navFactory, ResourceCog, Cog, units } from './utils/okdutils';
 import {
@@ -314,27 +314,47 @@ const mapDispatchToProps = () => ({
   watchK8sList: actions.watchK8sList
 });
 
-const ConnectedNewVMWizard = ({ activeNamespace, resources, flatten, onHide, createVm }) => {
-  const namespaces = flatten(resources);
-  const templates = _.get(resources, TemplateModel.kind, {}).data;
-  const networkConfigs = _.get(resources, NetworkAttachmentDefinitionModel.kind, {}).data;
-  const storageClasses = _.get(resources, StorageClassModel.kind, {}).data;
-  const persistentVolumeClaims = _.get(resources, PersistentVolumeClaimModel.kind, {}).data;
+const getLoadingResource = (resources, kind) => {
+  let data;
+  if (resources[kind]) {
+    data = resources[kind].loaded ? resources[kind].data : undefined;
+  } else {
+    // if model is unknown (CRD not created in opeshift, etc..), resources[kind] is undefined
+    data = [];
+  }
+  return {
+    data,
+    loadError: _.get(resources, kind, {}).loadError
+  };
+};
+
+const ConnectedNewVMWizard = ({ activeNamespace, resources, onHide, createVm }) => {
+  const namespaces = getLoadingResource(resources, NamespaceModel.kind);
+  const templates = getLoadingResource(resources, TemplateModel.kind);
+  const networkConfigs = getLoadingResource(resources, NetworkAttachmentDefinitionModel.kind);
+  const storageClasses = getLoadingResource(resources, StorageClassModel.kind);
+  const persistentVolumeClaims = getLoadingResource(resources, PersistentVolumeClaimModel.kind);
+
+  const error = Object.keys(resources).find(key => resources[key].loadError);
+  if (error) {
+    errorModal({error});
+    return null;
+  }
 
   let selectedNamespace;
 
-  if (activeNamespace) {
-    selectedNamespace = namespaces.find(namespace => namespace.metadata.name === activeNamespace);
+  if (activeNamespace && namespaces.loaded) {
+    selectedNamespace = namespaces.data.find(namespace => namespace.metadata.name === activeNamespace);
   }
 
   return <CreateVmWizard
     onHide={onHide}
-    namespaces={namespaces}
-    templates={templates}
-    networkConfigs={networkConfigs || []}
+    namespaces={namespaces.data}
+    templates={templates.data}
+    networkConfigs={networkConfigs.data}
     selectedNamespace={selectedNamespace}
-    storageClasses={storageClasses}
-    persistentVolumeClaims={persistentVolumeClaims}
+    storageClasses={storageClasses.data}
+    persistentVolumeClaims={persistentVolumeClaims.data}
     k8sCreate={createVm}
     units={units} />;
 };
@@ -398,7 +418,7 @@ export const VirtualMachinesPage = connect(
       { kind:StorageClassModel.kind, isList: true, prop: StorageClassModel.kind},
       { kind:PersistentVolumeClaimModel.kind, isList: true, prop: PersistentVolumeClaimModel.kind}
     ];
-    return <Firehose resources={resources} flatten={getFlattenForKind(NamespaceModel.kind)}>
+    return <Firehose resources={resources}>
       <ConnectedNewVMWizard onHide={this._onHide} createVm={k8sCreate} activeNamespace={this.props.namespace} />
     </Firehose>;
   }
