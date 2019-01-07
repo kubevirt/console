@@ -115,3 +115,95 @@ describe('Kubevirt create VM using wizard', () => {
     leakedResources.delete(JSON.stringify({name: vmName, namespace: testName, kind: 'vm'}));
   });
 });
+
+describe('Kubevirt create VM from URL and Container using wizard', () => {
+  const leakedResources = new Set<string>();
+  const vmName = `vm-${testName}`;
+  var provisionSource = ['Container', 'URL'];
+  var provisionSourceContent = ['kubevirt/cirros-registry-disk-demo:latest', 
+                                  'https://download.cirros-cloud.net/0.4.0/cirros-0.4.0-x86_64-disk.img'];
+  const operatingSystem = 'fedora28';
+  const flavor = 'small';
+  const workloadProfile = 'generic';
+
+  afterAll(async() => {
+    const leakedArray: Array<string> = [...leakedResources];
+    if (leakedArray.length > 0) {
+      console.error(`Leaked ${leakedArray.join()}`);
+      leakedArray.map(r => JSON.parse(r) as {name: string, namespace: string, kind: string})
+        .forEach(({name, namespace, kind}) => {
+          try {
+            execSync(`kubectl delete -n ${namespace} --cascade ${kind} ${name}`);
+          } catch (error) {
+            console.error(`Failed to delete ${kind} ${name}:\n${error}`);
+          }
+        });
+    }
+  });
+  
+  function configure_vm_basic(provisionSource, provisionSourceSelector, provisionSourceContent) {
+    it('Navigates to VMs', async() => {
+      await browser.get(`${appHost}/k8s/all-namespaces/virtualmachines`);
+      await isLoaded();
+    });
+
+    it('Opens VM wizard', async() => {
+      await createItemButton.click().then(() => vmView.createWithWizardLink.click());
+    });
+
+    it(`Configures VM Basic Settings with provision source ${provisionSource}`, async() => {
+      await browser.wait(until.presenceOf(vmView.nameInput), 10000);
+      await vmView.nameInput.sendKeys(vmName);
+
+      await vmView.namespaceButton.click();
+      await vmView.namespaceMenu.element(by.linkText(testName)).click();
+
+      await vmView.provisionSourceButton.click();
+      await vmView.provisionSourceMenu.element(by.linkText(provisionSource)).click();
+      await provisionSourceSelector.sendKeys(provisionSourceContent);
+
+      await vmView.operatingSystemButton.click();
+      await vmView.operatingSystemMenu.element(by.linkText(operatingSystem)).click();
+
+      await vmView.flavorButton.click();
+      await vmView.flavorSourceMenu.element(by.linkText(flavor)).click();
+
+      await vmView.workloadProfileButton.click();
+      await vmView.workloadProfileMenu.element(by.linkText(workloadProfile)).click();
+
+      await vmView.startVMOnCreation.click();
+
+      await vmView.nextButton.click();
+    });
+
+
+    it('Configures VM Networking', async() => {
+      await vmView.nextButton.click();
+    });
+
+    it('Configures VM Storage', async() => {
+      await vmView.nextButton.click();
+    });
+
+    it('Confirms to create VM', async() => {
+      leakedResources.add(JSON.stringify({name: vmName, namespace: testName, kind: 'vm'}));
+      await browser.wait(until.elementToBeClickable(vmView.nextButton), 5000).then(() => vmView.nextButton.click());
+    });
+
+    it('Verifies created VM', async() => {
+      await browser.wait(until.invisibilityOf(vmView.wizardHeader), 5000);
+      await filterForName(vmName);
+      await resourceRowsPresent();
+      await browser.wait(until.textToBePresentInElement(vmView.firstRowVMStatus, 'Running'), 20000);
+    });
+
+    it('Removes created VM', async() => {
+      await deleteRow('VirtualMachine')(vmName);
+      leakedResources.delete(JSON.stringify({name: vmName, namespace: testName, kind: 'vm'}));
+    });
+  }
+
+  for(var i = 0; i < provisionSource.length; i++) {
+    configure_vm_basic(provisionSource[i], vmView.provisionSourceSelector[i], provisionSourceContent[i]);
+  }
+});
