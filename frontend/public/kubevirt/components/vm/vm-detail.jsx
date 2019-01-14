@@ -1,4 +1,5 @@
 import React from 'react';
+import * as _ from 'lodash-es';
 import {
   VmDetails,
   CDI_KUBEVIRT_IO,
@@ -17,6 +18,7 @@ import {
   PodModel,
   NamespaceModel,
   VirtualMachineInstanceMigrationModel,
+  VirtualMachineModel,
 } from '../../models/index';
 import {
   getResource,
@@ -33,34 +35,30 @@ import { NodeLink, LoadingInline } from '../../../components/utils';
 import { menuActions } from './menu-actions';
 
 const VmEvents = ({ obj: vm }) => {
-  const vmi = {
-    kind: VirtualMachineInstanceModel.kind,
-    metadata: {
-      name: getName(vm),
-      namespace: getNamespace(vm),
-    },
+  const vmObj = {
+    name: getName(vm),
+    namespace: getNamespace(vm),
   };
-  const launcherPod = {
-    customFilter: ({ kind, namespace, name }) =>
-      kind === PodModel.kind && namespace === getNamespace(vm) && name.startsWith(`${VIRT_LAUNCHER_POD_PREFIX}${getName(vm)}-`),
+  const vmFilter = obj => _.isMatch(obj, {...vmObj, kind: VirtualMachineModel.kind});
+  const vmiFilter = obj => _.isMatch(obj, {...vmObj, kind: VirtualMachineInstanceModel.kind});
+  const launcherPodFilter = ({ kind, namespace, name }) =>
+    kind === PodModel.kind && namespace === getNamespace(vm) && name.startsWith(`${VIRT_LAUNCHER_POD_PREFIX}${getName(vm)}-`);
+  const importerPodFilter = ({ kind, namespace, name }) => {
+    // importer pod example importer-<diskName>-<vmname>-<generatedId>
+    // note: diskName and vmname may contain '-' which means pod name should have at least 4 parts
+    if (kind === PodModel.kind && namespace === getNamespace(vm) && name.startsWith('importer-') && name.split('-').length > 3) {
+      const importerDashIndex = name.indexOf('-');
+      const diskDashIndex = name.indexOf('-', importerDashIndex + 1);
+      const lastDashIndex = name.lastIndexOf('-');
+      // try to remove importer- and some part of <diskname>
+      const diskAndVmName = name.slice(diskDashIndex + 1, lastDashIndex);
+      return diskAndVmName.endsWith(getName(vm));
+    }
+    return false;
   };
-  const importerPod = {
-    customFilter: ({ kind, namespace, name }) => {
-      // importer pod example importer-<diskName>-<vmname>-<generatedId>
-      // note: diskName may contain '-' which means pod name should have at least 4 parts
-      const podNameSplit = name.split('-');
-      const vmName = podNameSplit.length > 3 ? podNameSplit[podNameSplit.length - 2] : null;
-      if (!vmName) {
-        return false;
-      }
-      return kind === PodModel.kind && namespace === getNamespace(vm) && name.startsWith('importer') && vmName === getName(vm);
-    },
-  };
-  const migrationsFilter = {
-    customFilter: ({ kind, namespace, name }) =>
-      kind === VirtualMachineInstanceMigrationModel.kind && namespace === getNamespace(vm) && name === `${getName(vm)}-migration`,
-  };
-  return <ResourcesEventStream objects={[vmi, vm, launcherPod, importerPod, migrationsFilter]} namespace={getNamespace(vm)} />;
+  const migrationsFilter = ({ kind, namespace, name }) =>
+    kind === VirtualMachineInstanceMigrationModel.kind && namespace === getNamespace(vm) && name === `${getName(vm)}-migration`;
+  return <ResourcesEventStream filters={[vmiFilter, vmFilter, launcherPodFilter, importerPodFilter, migrationsFilter]} namespace={getNamespace(vm)} />;
 };
 
 const ConnectedVmDetails = ({ obj: vm }) => {
