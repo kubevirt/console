@@ -2,6 +2,6 @@
 
 import { $ } from 'protractor';
 
-export const nameInput = $('input[name=login]');
+export const nameInput = $('input[name=username]');
 export const passwordInput = $('input[name=password]');
 export const submitButton = $('button[type=submit]');
