@@ -19,6 +19,11 @@ const htmlReporter = new HtmlScreenshotReporter({dest: './gui_test_screenshots',
 const junitReporter = new JUnitXmlReporter({savePath: './gui_test_screenshots', consolidateAll: true});
 const browserLogs: logging.Entry[] = [];
 
+const plugins = [];
+if (process.env.FAIL_FAST === 'true') {
+  plugins.push(failFast.init());
+}
+
 export const config: Config = {
   framework: 'jasmine',
   directConnect: true,
@@ -28,9 +33,10 @@ export const config: Config = {
     defaultTimeoutInterval: 40000,
   },
   logLevel: tap ? 'ERROR' : 'INFO',
-  plugins: [failFast.init()],
+  plugins,
   capabilities: {
     browserName: 'chrome',
+    acceptInsecureCerts: true,
     chromeOptions: {
       args: [
         '--disable-gpu',
@@ -67,6 +73,9 @@ export const config: Config = {
       consoleLogStream.write(`${format.apply(null, [`[${level.name}]`, messageStr])}\n`);
     });
 
+    const url = await browser.getCurrentUrl();
+    console.log('Last browser URL: ', url);
+
     // Use projects if OpenShift so non-admin users can run tests. We need the fully-qualified name
     // since we're using kubectl instead of oc.
     const resource = browser.params.openshift === 'true' ? 'projects.project.openshift.io' : 'namespaces';
@@ -85,7 +94,7 @@ export const config: Config = {
     crud: ['tests/base.scenario.ts', 'tests/crud.scenario.ts', 'tests/secrets.scenario.ts', 'tests/filter.scenario.ts', 'tests/modal-annotations.scenario.ts', 'tests/environment.scenario.ts'],
     monitoring: ['tests/base.scenario.ts', 'tests/monitoring.scenario.ts'],
     newApp: ['tests/base.scenario.ts', 'tests/overview/overview.scenario.ts', 'tests/source-to-image.scenario.ts', 'tests/deploy-image.scenario.ts'],
-    olm: ['tests/base.scenario.ts', 'tests/olm/descriptors.scenario.ts', 'tests/olm/catalog.scenario.ts', 'tests/olm/etcd.scenario.ts'],
+    olm: ['tests/base.scenario.ts', 'tests/olm/descriptors.scenario.ts', 'tests/olm/catalog.scenario.ts', 'tests/olm/prometheus.scenario.ts', 'tests/olm/etcd.scenario.ts'],
     olmUpgrade: ['tests/base.scenario.ts', 'tests/olm/update-channel-approval.scenario.ts'],
     performance: ['tests/base.scenario.ts', 'tests/performance.scenario.ts'],
     serviceCatalog: ['tests/base.scenario.ts', 'tests/service-catalog/service-catalog.scenario.ts', 'tests/service-catalog/service-broker.scenario.ts', 'tests/service-catalog/service-class.scenario.ts', 'tests/service-catalog/service-binding.scenario.ts', 'tests/developer-catalog.scenario.ts'],
@@ -105,6 +114,7 @@ export const config: Config = {
       'tests/olm/descriptors.scenario.ts',
       'tests/olm/catalog.scenario.ts',
       'tests/operator-hub/operator-hub.scenario.ts',
+      'tests/olm/prometheus.scenario.ts',
       'tests/olm/etcd.scenario.ts'],
     all: ['tests/base.scenario.ts',
       'tests/crud.scenario.ts',
