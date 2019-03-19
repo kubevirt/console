@@ -1,6 +1,8 @@
 import React from 'react';
+import {
+  StorageOverview as KubevirtStorageOverview,
 
-import * as dashboardMockup from '../../../imgs/ocs-dashboard.png';
+} from 'kubevirt-web-ui-components';
 
 export class StorageOverview extends React.Component {
   constructor(props){
@@ -10,7 +12,7 @@ export class StorageOverview extends React.Component {
 
   render() {
     return (
-      <img className="storage-dashboard-mockup" src={dashboardMockup} />
+      <KubevirtStorageOverview />
     );
   }
 }
