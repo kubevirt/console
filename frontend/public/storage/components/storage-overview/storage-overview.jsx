@@ -5,12 +5,20 @@ import {
   getResource,
 } from 'kubevirt-web-ui-components';
 
-import { NodeModel, PodModel, PersistentVolumeClaimModel, VirtualMachineModel, InfrastructureModel } from '../../../models';
+import {
+  CephClusterModel,
+  NodeModel,
+  PodModel,
+  PersistentVolumeClaimModel,
+  VirtualMachineModel,
+  InfrastructureModel,
+} from '../../../models';
 import { WithResources } from '../../../kubevirt/components/utils/withResources';
+import { LoadingInline } from '../../../kubevirt/components/utils/okdutils';
 
 const resourceMap = {
   nodes: {
-    resource: getResource(NodeModel, {namespaced: false}),
+    resource: getResource(NodeModel, { namespaced: false }),
   },
   pods: {
     resource: getResource(PodModel),
@@ -22,7 +30,14 @@ const resourceMap = {
     resource: getResource(VirtualMachineModel),
   },
   infrastructure: {
-    resource: getResource(InfrastructureModel, { namespaced: false, name: 'cluster', isList: false }),
+    resource: getResource(InfrastructureModel, {
+      namespaced: false,
+      name: 'cluster',
+      isList: false,
+    }),
+  },
+  cephCluster: {
+    resource: getResource(CephClusterModel),
   },
 };
 
@@ -65,22 +80,30 @@ const getInventoryData = resources => {
 };
 
 export class StorageOverview extends React.Component {
-  constructor(props){
+  constructor(props) {
     super(props);
-
+    this.state = {};
   }
 
   render() {
     const inventoryResourceMapToProps = resources => {
       return {
         value: {
+          detailsData: {
+            LoadingComponent: LoadingInline,
+            storageCluster: resources.cephCluster,
+            ...this.state.detailsData,
+          },
           inventoryData: getInventoryData(resources), // k8s object loaded via WithResources
         },
       };
     };
 
     return (
-      <WithResources resourceMap={resourceMap} resourceToProps={inventoryResourceMapToProps}>
+      <WithResources
+        resourceMap={resourceMap}
+        resourceToProps={inventoryResourceMapToProps}
+      >
         <ClusterOverviewContext.Provider>
           <KubevirtStorageOverview />
         </ClusterOverviewContext.Provider>
