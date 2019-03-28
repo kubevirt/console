@@ -16,12 +16,16 @@ import {
 import { WithResources } from '../../../kubevirt/components/utils/withResources';
 import { LoadingInline } from '../../../kubevirt/components/utils/okdutils';
 
+const CEPH_ROOK_NAMESPACE = 'openshift-storage';
+
 const resourceMap = {
   nodes: {
     resource: getResource(NodeModel, { namespaced: false }),
   },
   pods: {
-    resource: getResource(PodModel),
+    resource: getResource(PodModel, {
+      namespace: CEPH_ROOK_NAMESPACE,
+    }),
   },
   pvcs: {
     resource: getResource(PersistentVolumeClaimModel),
