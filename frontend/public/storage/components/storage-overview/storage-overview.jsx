@@ -45,44 +45,6 @@ const resourceMap = {
   },
 };
 
-const getInventoryData = resources => {
-  const inventory = {};
-  if (resources.nodes) {
-    inventory.nodes = {
-      data: resources.nodes,
-      title: 'Hosts',
-      kind: NodeModel.kind,
-    };
-  }
-  if (resources.pods) {
-    inventory.pods = {
-      data: resources.pods,
-      title: 'Pods',
-      kind: PodModel.kind,
-    };
-  }
-  if (resources.pvcs) {
-    inventory.pvcs = {
-      data: resources.pvcs,
-      title: 'PVCs',
-      kind: PersistentVolumeClaimModel.kind,
-    };
-  }
-  if (resources.vms) {
-    inventory.vms = {
-      data: resources.vms,
-      title: 'VMs',
-      kind: VirtualMachineModel.kind,
-    };
-  }
-
-  return {
-    inventory,
-    loaded: !!inventory,
-    heading: 'OCS Inventory',
-  };
-};
-
 export class StorageOverview extends React.Component {
   constructor(props) {
     super(props);
@@ -94,9 +56,12 @@ export class StorageOverview extends React.Component {
       return {
         value: {
           LoadingComponent: LoadingInline,
-          storageCluster: resources.cephCluster,
-          ...this.state.detailsData,
           ...resources,
+          detailsData: {
+            LoadingComponent: LoadingInline,
+            storageCluster: resources.cephCluster,
+            ...this.state.detailsData,
+          },
         },
       };
     };
