@@ -47,6 +47,7 @@ describe('Test create vm from yaml', () => {
       await yaml.createVMFromYaml();
       await yaml.errorOccurOnCreateVM();
       await yaml.cancelCreateVM();
+      expect(browser.getCurrentUrl()).toEqual(`${appHost}/k8s/ns/${testName}/virtualmachines`);
     });
   });
 
@@ -74,6 +75,7 @@ describe('Test create vm from yaml', () => {
       await yaml.createVMFromYaml();
       await yaml.errorOccurOnCreateVM();
       await yaml.cancelCreateVM();
+      expect(browser.getCurrentUrl()).toEqual(`${appHost}/k8s/ns/${testName}/virtualmachines`);
     });
   });
 });
