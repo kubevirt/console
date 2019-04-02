@@ -93,12 +93,10 @@ export class StorageOverview extends React.Component {
     const inventoryResourceMapToProps = resources => {
       return {
         value: {
-          detailsData: {
-            LoadingComponent: LoadingInline,
-            storageCluster: resources.cephCluster,
-            ...this.state.detailsData,
-          },
-          inventoryData: getInventoryData(resources), // k8s object loaded via WithResources
+          LoadingComponent: LoadingInline,
+          storageCluster: resources.cephCluster,
+          ...this.state.detailsData,
+          ...resources,
         },
       };
     };
