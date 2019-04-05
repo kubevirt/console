@@ -1,7 +1,7 @@
 import React from 'react';
 import {
   StorageOverview as KubevirtStorageOverview,
-  ClusterOverviewContext,
+  StorageOverviewContext,
   getResource,
 } from 'kubevirt-web-ui-components';
 
@@ -46,7 +46,7 @@ const resourceMap = {
     resource: getResource(VirtualMachineInstanceMigrationModel),
   },
   cephCluster: {
-    resource: getResource(CephClusterModel),
+    resource: getResource(CephClusterModel, { isList: false }),
   },
 };
 
@@ -124,9 +124,9 @@ export class StorageOverview extends React.Component {
         resourceMap={resourceMap}
         resourceToProps={inventoryResourceMapToProps}
       >
-        <ClusterOverviewContext.Provider>
+        <StorageOverviewContext.Provider>
           <KubevirtStorageOverview />
-        </ClusterOverviewContext.Provider>
+        </StorageOverviewContext.Provider>
       </WithResources>
     );
   }
