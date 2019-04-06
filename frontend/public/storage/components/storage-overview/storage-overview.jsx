@@ -8,19 +8,15 @@ import {
 import {
   CephClusterModel,
   NodeModel,
-  PodModel,
   PersistentVolumeClaimModel,
   PersistentVolumeModel,
-  VirtualMachineModel,
-  VirtualMachineInstanceMigrationModel,
 } from '../../../models';
 
 import { WithResources } from '../../../kubevirt/components/utils/withResources';
 import { LoadingInline } from '../../../kubevirt/components/utils/okdutils';
 import { coFetchJSON } from '../../../co-fetch';
 
-const REFRESH_TIMEOUT = 30000;
-const CEPH_ROOK_NAMESPACE = 'openshift-storage';
+const REFRESH_TIMEOUT = 5000;
 
 const CEPH_STATUS = 'ceph_health_status';
 
@@ -28,27 +24,18 @@ const resourceMap = {
   nodes: {
     resource: getResource(NodeModel, { namespaced: false }),
   },
-  pods: {
-    resource: getResource(PodModel, {
-      namespace: CEPH_ROOK_NAMESPACE,
-    }),
-  },
   pvs: {
     resource: getResource(PersistentVolumeModel),
   },
   pvcs: {
     resource: getResource(PersistentVolumeClaimModel),
   },
-  vms: {
-    resource: getResource(VirtualMachineModel),
-  },
-  migrations: {
-    resource: getResource(VirtualMachineInstanceMigrationModel),
-  },
   cephCluster: {
-    resource: getResource(CephClusterModel, { isList: false }),
+    resource: getResource(CephClusterModel),
   },
 };
+
+const getPrometheusBaseURL = () => window.SERVER_FLAGS.prometheusBaseURL;
 
 export class StorageOverview extends React.Component {
   constructor(props) {
@@ -61,6 +48,7 @@ export class StorageOverview extends React.Component {
     };
     this.setHealthData = this._setHealthData.bind(this);
   }
+
   _setHealthData(healthy) {
     this.setState({
       ocsHealthData: {
@@ -72,36 +60,26 @@ export class StorageOverview extends React.Component {
     });
   }
 
-  fetchHealth(response, callback) {
-    const result = response.data.result;
-    result.map(r => callback(r.value[1]));
-  }
-
   fetchPrometheusQuery(query, callback) {
-    const promURL = window.SERVER_FLAGS.prometheusBaseURL;
-    const url = `${promURL}/api/v1/query?query=${encodeURIComponent(query)}`;
-    coFetchJSON(url)
-      .then(result => {
-        if (this._isMounted) {
-          callback(result);
-        }
-      })
-      .then(() => {
-        if (this._isMounted) {
-          setTimeout(
-            () => this.fetchPrometheusQuery(query, callback),
-            REFRESH_TIMEOUT
-          );
-        }
-      });
+    const url = `${getPrometheusBaseURL()}/api/v1/query?query=${encodeURIComponent(query)}`;
+    coFetchJSON(url).then(result => {
+      if (this._isMounted) {
+        callback(result);
+      }
+    }).catch(error => {
+      if (this._isMounted) {
+        callback(error);
+      }
+    }).then(() => {
+      if (this._isMounted) {
+        setTimeout(() => this.fetchPrometheusQuery(query, callback), REFRESH_TIMEOUT);
+      }
+    });
   }
 
   componentDidMount() {
     this._isMounted = true;
-
-    this.fetchPrometheusQuery(CEPH_STATUS, response =>
-      this.fetchHealth(response, this.setHealthData)
-    );
+    this.fetchPrometheusQuery(CEPH_STATUS, this.setHealthData);
   }
   componentWillUnmount() {
     this._isMounted = false;
