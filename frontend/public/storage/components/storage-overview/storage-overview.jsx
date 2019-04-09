@@ -1,4 +1,6 @@
 import React from 'react';
+import * as _ from 'lodash-es';
+
 import {
   StorageOverview as KubevirtStorageOverview,
   StorageOverviewContext,
@@ -31,6 +33,7 @@ const UTILIZATION_IOPS_QUERY = '(sum(rate(ceph_pool_wr[1m])) + sum(rate(ceph_poo
 //This query only count the latency for all drives in the configuration. Might go with same for the demo
 const UTILIZATION_LATENCY_QUERY = '(quantile(.95,(irate(node_disk_read_time_seconds_total[1m]) + irate(node_disk_write_time_seconds_total[1m]) /  (irate(node_disk_reads_completed_total[1m]) + irate(node_disk_writes_completed_total[1m])))))[360m:5m]';
 const UTILIZATION_THROUGHPUT_QUERY = '(sum(rate(ceph_pool_wr_bytes[1m]) + rate(ceph_pool_rd_bytes[1m])))[360m:5m]';
+const TOP_CONSUMERS_QUERY = '(sort(topk(5, sum((max(kubelet_volume_stats_used_bytes{namespace!=""}) by (namespace, persistentvolumeclaim))* on (namespace,persistentvolumeclaim) group_left(pod) (max(kube_pod_spec_volumes_persistentvolumeclaims_info{namespace!="", pod != ""}) by (namespace, persistentvolumeclaim, pod))) by (namespace))))[360m:60m]';
 
 const resourceMap = {
   nodes: {
@@ -59,6 +62,10 @@ export class StorageOverview extends React.Component {
         data: {},
         loaded: false,
       },
+      topConsumersData: {
+        stats: [],
+        loaded: false,
+      },
       capacityData: {},
       diskStats: {},
       utilizationData: {},
@@ -68,6 +75,7 @@ export class StorageOverview extends React.Component {
     this.setCapacityData = this._setCapacityData.bind(this);
     this.setCephDiskStats = this._setCephDiskStats.bind(this);
     this.setUtilizationData = this._setUtilizationData.bind(this);
+    this.setTopConsumersData = this._setTopConsumersData.bind(this);
   }
 
   _setHealthData(healthy) {
@@ -107,6 +115,16 @@ export class StorageOverview extends React.Component {
     }));
   }
 
+  _setTopConsumersData(response) {
+    const result = _.get(response, 'data.result', []);
+    this.setState({
+      topConsumersData: {
+        stats: result,
+        loaded: true,
+      },
+    });
+  }
+
   fetchPrometheusQuery(query, callback) {
     const url = `${getPrometheusBaseURL()}/api/v1/query?query=${encodeURIComponent(query)}`;
     coFetchJSON(url).then(result => {
@@ -136,14 +154,15 @@ export class StorageOverview extends React.Component {
     this.fetchPrometheusQuery(UTILIZATION_IOPS_QUERY, response => this.setUtilizationData('iopsUtilization', response));
     this.fetchPrometheusQuery(UTILIZATION_LATENCY_QUERY, response => this.setUtilizationData('latencyUtilization', response));
     this.fetchPrometheusQuery(UTILIZATION_THROUGHPUT_QUERY, response => this.setUtilizationData('throughputUtilization', response));
+    this.fetchPrometheusQuery(TOP_CONSUMERS_QUERY, response => this.setTopConsumersData(response));
   }
+
   componentWillUnmount() {
     this._isMounted = false;
   }
 
   render() {
-    const { ocsHealthData, capacityData, diskStats, utilizationData } = this.state;
-
+    const { ocsHealthData, capacityData, diskStats, utilizationData, topConsumersData } = this.state;
     const inventoryResourceMapToProps = resources => {
       return {
         value: {
@@ -157,6 +176,7 @@ export class StorageOverview extends React.Component {
             loaded: true,
           },
           ...utilizationData,
+          ...topConsumersData,
         },
       };
     };
