@@ -5,6 +5,7 @@ import {
   StorageOverview as KubevirtStorageOverview,
   StorageOverviewContext,
   getResource,
+  TopConsumerStats
 } from 'kubevirt-web-ui-components';
 
 import {
@@ -177,6 +178,7 @@ export class StorageOverview extends React.Component {
           },
           ...utilizationData,
           ...topConsumersData,
+          ...TopConsumerStats
         },
       };
     };
