@@ -136,7 +136,7 @@ describe('Test clone VM.', () => {
     }, VM_BOOTUP_TIMEOUT);
 
     it('Cloned VM has cleared MAC addresses.', async() => {
-      await vm.addNic(networkInterface.name, networkInterface.mac, networkInterface.binding, networkInterface.networkDefinition);
+      await vm.addNic(networkInterface.name, networkInterface.mac, networkInterface.networkDefinition, networkInterface.binding);
       await vm.action('Clone');
       await wizard.next();
 

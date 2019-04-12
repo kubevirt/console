@@ -76,7 +76,7 @@ export default class Wizard {
     await isLoaded();
   }
 
-  async addNIC(name: string, mac: string, networkDefinition: string, binding: string) {
+  async addNic(name: string, mac: string, networkDefinition: string, binding: string) {
     await wizardView.createNIC.click();
     const rowsCount = await this.getTableRowsCount();
     // Dropdown selection needs to be first due to https://github.com/kubevirt/web-ui-components/issues/9

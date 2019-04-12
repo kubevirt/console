@@ -94,7 +94,7 @@ export class VirtualMachine extends DetailView {
     await confirmAction();
   }
 
-  async addNic(name: string, mac: string, binding: string, networkAttachmentDefinition: string) {
+  async addNic(name: string, mac: string, networkAttachmentDefinition: string, binding: string) {
     await this.navigateToTab(vmView.nicsTab);
     await vmView.createNic.click();
     await fillInput(vmView.nicName, name);
