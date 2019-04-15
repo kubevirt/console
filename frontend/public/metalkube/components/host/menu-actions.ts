@@ -1,5 +1,5 @@
 import {
-  getHostPoweredOn,
+  isHostPoweredOn,
   getMachineNode,
   canHostStartMaintenance,
   canHostStopMaintenance,
@@ -8,6 +8,7 @@ import {
 import { makeNodeSchedulable } from '../../../module/k8s';
 import { Kebab } from '../utils/okdutils';
 import { startMaintenanceModal } from '../modals/start-maintenance-modal';
+import { confirmModal } from '../../../components/modals/confirm-modal';
 
 const menuActionStartMaintenance = (kind, host, { machine, Node: nodes }) => {
   const node = getMachineNode(nodes, machine);
@@ -23,12 +24,17 @@ const menuActionStopMaintenance = (kind, host, { machine, Node: nodes }) => {
   return {
     hidden: !canHostStopMaintenance(node),
     label: 'Stop Maintenance',
-    callback: () => makeNodeSchedulable(node),
+    callback: () =>
+      confirmModal({
+        executeFn: () => makeNodeSchedulable(node),
+        title: 'Stop Maintenance',
+        message: 'Node will exit maintenance and start taking workloads.',
+      }),
   };
 };
 
 const menuActionPowerOn = (kind, host) => ({
-  hidden: getHostPoweredOn(host),
+  hidden: isHostPoweredOn(host),
   label: 'Power On',
   callback: () => {
     // eslint-disable-next-line no-console
@@ -37,7 +43,7 @@ const menuActionPowerOn = (kind, host) => ({
 });
 
 const menuActionPowerOff = (kind, host) => ({
-  hidden: !getHostPoweredOn(host),
+  hidden: !isHostPoweredOn(host),
   label: 'Power Off',
   callback: () => {
     // eslint-disable-next-line no-console

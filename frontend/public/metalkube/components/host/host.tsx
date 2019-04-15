@@ -5,8 +5,11 @@ import {
   BaremetalHostStatus,
   getHostMachineName,
   getHostBmcAddress,
+  getName,
+  getNamespace,
   getResource,
   getSimpleHostStatus,
+  getUid,
 } from 'kubevirt-web-ui-components';
 
 import { actions, referenceForModel } from '../../../kubevirt/module/okdk8s';
@@ -56,12 +59,11 @@ const HostHeader = props => (
 );
 
 const HostRow = ({ obj: host }) => {
-  const {
-    metadata: { name, namespace, uid },
-  } = host;
-
+  const name = getName(host);
+  const namespace = getNamespace(host);
+  const uid = getUid(host);
   const machineName = getHostMachineName(host);
-  const address = getHostBmcAddress(host)
+  const address = getHostBmcAddress(host);
 
   const machineResource = {
     kind: referenceForModel(MachineModel),
