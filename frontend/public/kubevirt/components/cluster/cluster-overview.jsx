@@ -134,7 +134,7 @@ export class ClusterOverview extends React.Component {
     };
     this.fetchAndStore(`${k8sBasePath}/healthz`, 'k8sHealth', handleK8sHealthResponse, coFetch);
     this.fetchAndStore(
-      `${k8sBasePath}/apis/subresources.${VirtualMachineModel.apiGroup}/${VirtualMachineModel.apiVersion}/healthz`,
+      `/apis/subresources.${VirtualMachineModel.apiGroup}/${VirtualMachineModel.apiVersion}/healthz`,
       'kubevirtHealth'
     );
     this.fetchPrometheusQuery(CEPH_STATUS_QUERY, 'cephHealth');
