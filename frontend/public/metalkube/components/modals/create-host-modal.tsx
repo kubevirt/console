@@ -11,7 +11,7 @@ import {
 import { units } from '../../../kubevirt/components/utils/okdutils';
 import { NamespaceModel } from '../../models';
 
-export const openCreateBaremetalHostModal = activeNamespace => {
+export const openCreateBaremetalHostModal = (activeNamespace, name, controllerAddress) => {
   const launcher = modalResourceLauncher(
     CreateBaremetalHostDialog,
     {
@@ -33,6 +33,8 @@ export const openCreateBaremetalHostModal = activeNamespace => {
   );
 
   launcher({
+    name,
+    controllerAddress,
     k8sCreate,
     k8sGet,
     k8sPatch,

@@ -58,6 +58,12 @@ const HostHeader = props => (
   </ListHeader>
 );
 
+const createProps = (ns, name?, address?) => ({
+  onClick: () => {
+    openCreateBaremetalHostModal(ns, name, address);
+  },
+});
+
 const HostRow = ({ obj: host }) => {
   const name = getName(host);
   const namespace = getNamespace(host);
@@ -99,7 +105,7 @@ const HostRow = ({ obj: host }) => {
       </div>
       <div className={statusColumnClasses}>
         <WithResources resourceMap={machineName ? hostResourceMap : {}}>
-          <BaremetalHostStatus host={host} />
+          <BaremetalHostStatus host={host} onAddHost={createProps(namespace, name, address).onClick} />
         </WithResources>
       </div>
       <div className={machineColumnClasses}>
@@ -136,10 +142,6 @@ const filters = [
     ],
   },
 ];
-
-const createProps = ns => ({
-  onClick: () => openCreateBaremetalHostModal(ns),
-});
 
 const mapStateToProps = ({ k8s }) => ({
   k8s,
