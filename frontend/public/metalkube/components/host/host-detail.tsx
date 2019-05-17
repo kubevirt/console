@@ -9,6 +9,11 @@ import {
   isHostOnline,
   getHostNics,
   getHostStorage,
+  getHostBmcAddress,
+  getHostCpus,
+  getHostDescription,
+  getHostRam,
+  getHostTotalStorageCapacity,
 } from 'kubevirt-web-ui-components';
 
 import { BaremetalHostModel } from '../../models';
@@ -22,6 +27,8 @@ import {
   ColHead,
   ResourceRow,
 } from '../factory/okdfactory';
+import MachineCell from './machine-cell';
+import { units } from '../../../components/utils/units';
 
 const BaremetalHostDetails = ({ host }) => {
   const nics = getHostNics(host);
@@ -34,6 +41,12 @@ const BaremetalHostDetails = ({ host }) => {
     'fa-refresh': true,
   });
 
+  const totalCapacity = units.humanize(
+    // The value from the selector is in GB
+    getHostTotalStorageCapacity(host) * 1024 ** 3,
+    'decimalBytes',
+    true).string;
+
   return (
     <div className="co-m-pane__body">
       <h1 className="co-m-pane__heading">Baremetal Host Overview</h1>
@@ -42,6 +55,12 @@ const BaremetalHostDetails = ({ host }) => {
           <dl>
             <dt>Name</dt>
             <dd>{getName(host)}</dd>
+            <dt>Description</dt>
+            <dd>{getHostDescription(host)}</dd>
+          </dl>
+        </Col>
+        <Col lg={3} md={3} sm={3} xs={3}>
+          <dl>
             <dt>Status</dt>
             <dd>
               <span className="co-icon-and-text">
@@ -49,8 +68,26 @@ const BaremetalHostDetails = ({ host }) => {
                 {online ? 'Running' : 'Not running'}
               </span>
             </dd>
+            <dt>Management Address</dt>
+            <dd>{getHostBmcAddress(host)}</dd>
             <dt>IP Addresses</dt>
             <dd>{ips}</dd>
+          </dl>
+        </Col>
+        <Col lg={3} md={3} sm={3} xs={3}>
+          <dl>
+            <dt>Machine</dt>
+            <dd>
+              <MachineCell host={host} />
+            </dd>
+          </dl>
+        </Col>
+        <Col lg={2} md={2} sm={2} xs={2}>
+          <dl>
+            <dt>Hardware</dt>
+            <dd>{getHostCpus(host).length} CPU cores</dd>
+            <dd>{getHostRam(host)}GB RAM</dd>
+            <dd>{totalCapacity} Disk</dd>
           </dl>
         </Col>
       </Row>
