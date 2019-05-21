@@ -21,9 +21,7 @@ const tabs = [
   },
 ];
 
-const ConnctedResourceOverviewDetails = ( props ) => {
-  const { item, pods, migrations, vmi } = props;
-
+const ConnctedResourceOverviewDetails = ({ item, pods, migrations, vmi }) => {
   const actionArgs = {};
   actionArgs[PodModel.kind] = pods;
   actionArgs[VirtualMachineInstanceMigrationModel.kind] = migrations;
