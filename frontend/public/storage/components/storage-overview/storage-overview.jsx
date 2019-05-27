@@ -38,6 +38,9 @@ const CONSUMERS_SLCLASSES_REQUESTED_CAPACITY_QUERY = '(sort(topk(5, sum(avg_over
 const CONSUMERS_SLCLASSES_USED_CAPACITY_QUERY = '(sort(topk(5, sum(avg_over_time(kubelet_volume_stats_used_bytes[1h]) * on (namespace,persistentvolumeclaim) group_left(storageclass) kube_persistentvolumeclaim_info) by (storageclass))))[10m:1m]';
 const CONSUMERS_PODS_REQUESTED_CAPACITY_QUERY = '(sort(topk(5, sum(avg_over_time(kube_persistentvolumeclaim_resource_requests_storage_bytes[1h]) * on (namespace,persistentvolumeclaim) group_left(pod) kube_pod_spec_volumes_persistentvolumeclaims_info) by (pod))))[10m:1m]';
 const CONSUMERS_PODS_USED_CAPACITY_QUERY = '(sort(topk(5, sum(avg_over_time(kubelet_volume_stats_used_bytes[1h]) * on (namespace,persistentvolumeclaim) group_left(pod) kube_pod_spec_volumes_persistentvolumeclaims_info) by (pod))))[10m:1m]';
+const CONSUMERS_VMS_REQUESTED_CAPACITY_QUERY = '(sort(topk(5, sum(avg_over_time(kube_persistentvolumeclaim_resource_requests_storage_bytes[1h]) * on (namespace,persistentvolumeclaim) group_left(pod) kube_pod_spec_volumes_persistentvolumeclaims_info{pod=~"virt-launcher-.*"}) by (pod))))[10m:1m]';
+const CONSUMERS_VMS_USED_CAPACITY_QUERY = '(sort(topk(5, sum(max(avg_over_time(kubelet_volume_stats_used_bytes[1h]) * on (namespace,persistentvolumeclaim) group_left(pod) kube_pod_spec_volumes_persistentvolumeclaims_info{pod=~"virt-launcher-.*"}) by (pod,persistentvolumeclaim)) by (pod))))[10m:1m]';
+
 const {
   CEPH_STATUS_QUERY,
   CEPH_OSD_UP_QUERY,
@@ -64,6 +67,8 @@ const PROM_RESULT_CONSTANTS = {
   slClassesUsedCapacity: 'slClassesUsedCapacity',
   podsRequestedCapacity: 'podsRequestedCapacity',
   podsUsedCapacity: 'podsUsedCapacity',
+  vmsRequestedCapacity: 'vmsRequestedCapacity',
+  vmsUsedCapacity: 'vmsUsedCapacity',
   oneHour: '[1h:10m]',
   sixHours: '[6h:1h]',
   twentyFourHours: '[24h:4h]',
@@ -176,6 +181,9 @@ export class StorageOverview extends React.Component {
       fetchPrometheusQuery(CONSUMERS_SLCLASSES_USED_CAPACITY_QUERY, response => this.onFetch(PROM_RESULT_CONSTANTS.slClassesUsedCapacity, response));
       fetchPrometheusQuery(CONSUMERS_PODS_REQUESTED_CAPACITY_QUERY, response => this.onFetch(PROM_RESULT_CONSTANTS.podsRequestedCapacity, response));
       fetchPrometheusQuery(CONSUMERS_PODS_USED_CAPACITY_QUERY, response => this.onFetch(PROM_RESULT_CONSTANTS.podsUsedCapacity, response));
+
+      fetchPrometheusQuery(CONSUMERS_VMS_REQUESTED_CAPACITY_QUERY, response => this.onFetch(PROM_RESULT_CONSTANTS.vmsRequestedCapacity, response));
+      fetchPrometheusQuery(CONSUMERS_VMS_USED_CAPACITY_QUERY, response => this.onFetch(PROM_RESULT_CONSTANTS.vmsUsedCapacity, response));
     }
 
     if (getAlertManagerBaseURL()) {
