@@ -1,6 +1,16 @@
 export const DASHES = '---';
 export const STORAGE_CLASS = process.env.STORAGE_CLASS;
 
+export const KUBEADMIN_IDP = 'kube:admin';
+export const KUBEADMIN_USERNAME = 'kubeadmin';
+export const {
+  BRIDGE_HTPASSWD_IDP = 'test',
+  BRIDGE_HTPASSWD_USERNAME = 'test',
+  BRIDGE_HTPASSWD_PASSWORD = 'test',
+  BRIDGE_KUBEADMIN_PASSWORD,
+  KUBECONFIG,
+} = process.env;
+
 // TIMEOUTS
 const SEC = 1000;
 export const CLONE_VM_TIMEOUT = 300 * SEC;

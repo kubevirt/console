@@ -6,6 +6,41 @@ import { STORAGE_CLASS } from './consts';
 import { getRandomMacAddress } from './utils';
 
 
+export const nonAdminSecret = {
+  apiVersion: 'v1',
+  kind: 'Secret',
+  metadata: {
+    name: 'test',
+    namespace: 'openshift-config',
+  },
+  type: 'Opaque',
+  data: {
+    htpasswd: 'dGVzdDokMnkkMDUkeENGNUZMTGEvamp5ZmJpLm1mVlBnLjFQVmNGMFRucG4vNmF0RzB1bExUOEN2TnhCZjE2MG0K',
+  },
+};
+
+export const nonAdminProvider = {
+  apiVersion: 'config.openshift.io/v1',
+  kind: 'OAuth',
+  metadata: {
+    name: 'cluster',
+  },
+  spec: {
+    identityProviders: [
+      {
+        name: 'test',
+        mappingMethod: 'claim',
+        type: 'HTPasswd',
+        htpasswd: {
+          fileData: {
+            name: 'test',
+          },
+        },
+      },
+    ],
+  },
+};
+
 export const multusNad = {
   apiVersion: 'k8s.cni.cncf.io/v1',
   kind: 'NetworkAttachmentDefinition',

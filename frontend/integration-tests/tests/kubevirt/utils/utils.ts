@@ -4,8 +4,6 @@ import { execSync } from 'child_process';
 import { $, by, ElementFinder, browser, ExpectedConditions as until } from 'protractor';
 
 import { config } from '../../../protractor.conf';
-import { nameInput as loginNameInput, passwordInput as loginPasswordInput, submitButton as loginSubmitButton } from '../../../views/login.view';
-import { PAGE_LOAD_TIMEOUT } from './consts';
 
 
 export function removeLeakedResources(leakedResources: Set<string>) {
@@ -37,7 +35,7 @@ export function removeLeakableResource(leakedResources: Set<string>, resource) {
 }
 
 export function createResource(resource) {
-  execSync(`echo '${JSON.stringify(resource)}' | kubectl create -f -`);
+  execSync(`echo '${JSON.stringify(resource)}' | kubectl apply -f -`);
 }
 
 export function createResources(resources) {
@@ -108,13 +106,6 @@ export async function fillInput(elem: ElementFinder, value: string) {
 
 export async function getInputValue(elem: ElementFinder) {
   return elem.getAttribute('value');
-}
-
-export async function logIn() {
-  await fillInput(loginNameInput, process.env.BRIDGE_AUTH_USERNAME);
-  await fillInput(loginPasswordInput, process.env.BRIDGE_AUTH_PASSWORD);
-  await click(loginSubmitButton);
-  await browser.wait(until.visibilityOf($('img.pf-c-brand')), PAGE_LOAD_TIMEOUT);
 }
 
 export function getRandStr(length: number) {

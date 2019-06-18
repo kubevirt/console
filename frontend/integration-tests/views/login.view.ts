@@ -1,7 +1,6 @@
 /* eslint-disable no-undef, no-unused-vars */
 
 import { $, browser, ExpectedConditions as until, by, element } from 'protractor';
-import { appHost } from '../protractor.conf';
 
 export const nameInput = $('#inputUsername');
 export const passwordInput = $('#inputPassword');
@@ -11,15 +10,11 @@ export const userDropdown = $('[data-test=user-dropdown] .pf-c-dropdown__toggle'
 
 export const selectProvider = async(provider: string) => {
   const idpLink = element(by.cssContainingText('.idp', provider));
-  while (!(await idpLink.isPresent())) {
-    await browser.get(appHost);
-    await browser.sleep(3000);
-  }
   await idpLink.click();
 };
 
 export const login = async(providerName: string, username: string, password: string) => {
-  if (providerName) {
+  if (await $('a.idp').isPresent()) {
     await selectProvider(providerName);
   }
   await browser.wait(until.visibilityOf(nameInput));

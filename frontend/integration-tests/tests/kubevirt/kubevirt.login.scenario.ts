@@ -1,14 +1,19 @@
 import { browser } from 'protractor';
 import { appHost } from '../../protractor.conf';
 import { execSync } from 'child_process';
-import { logIn } from './utils/utils';
+import { KUBEADMIN_IDP, KUBEADMIN_USERNAME, BRIDGE_KUBEADMIN_PASSWORD } from './utils/consts';
+import * as loginView from '../../views/login.view';
+
 
 describe('Authentication', () => {
-  it('Web console logs in.', async() => {
+  beforeAll(async() => {
     await browser.get(appHost);
-    if (process.env.BRIDGE_BASE_ADDRESS !== undefined) {
-      await logIn();
-      execSync(`oc login -u ${process.env.BRIDGE_AUTH_USERNAME} -p ${process.env.BRIDGE_AUTH_PASSWORD} --config=${process.env.KUBECONFIG}`);
-    }
+    await browser.sleep(3000); // Wait long enough for the login redirect to complete
+  });
+
+  it('Web console logs in.', async() => {
+    await loginView.login(KUBEADMIN_IDP, KUBEADMIN_USERNAME, BRIDGE_KUBEADMIN_PASSWORD);
+    expect(loginView.userDropdown.getText()).toContain(KUBEADMIN_IDP);
+    execSync(`oc login -u ${KUBEADMIN_USERNAME} -p ${BRIDGE_KUBEADMIN_PASSWORD}`);
   });
 });
