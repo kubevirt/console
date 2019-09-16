@@ -3,6 +3,8 @@ KubeVirt Web User Interface
 
 [![Build Status](https://travis-ci.org/kubevirt/web-ui.svg?branch=master)](https://travis-ci.org/kubevirt/web-ui)
 
+### This project is deprecated in favor of [OpenShift Console](https://github.com/openshift/console) where it is included as plugin.
+
 Extension of the [OpenShift Console](https://github.com/openshift/console/) for Virtualization View.
 
 [![Walk-through video](https://imgur.com/ouqSr52)](https://youtu.be/ouqiFeQN6cs)
